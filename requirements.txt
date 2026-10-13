@@ -1,10 +1,8 @@
 Flask==1.0.2
 Flask-SocketIO==3.3.2
-# Pin eventlet to a version compatible with Gunicorn's eventlet worker
-# Newer eventlet releases may change internal API; 0.30.2 is known to work with older greenlet
-eventlet==0.30.2
-# Pin greenlet to an older compatible version (required by eventlet)
-greenlet==0.4.15
+# Use gevent worker instead of eventlet to avoid greenlet C-API build issues
+gevent==21.12.0
+gevent-websocket==0.10.1
 python-socketio==3.1.2
 python-engineio==3.8.2.post1
 Jinja2==2.11.3

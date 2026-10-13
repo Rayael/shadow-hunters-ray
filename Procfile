@@ -1,1 +1,1 @@
-web: gunicorn -k eventlet -w 1 "shadow-hunters.app:app"
+web: gunicorn -k gevent -w 1 "shadow-hunters.app:app"
