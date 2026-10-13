@@ -12,12 +12,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/amritrau/shadow-hunters.git"
+    "url": "git+https://github.com/Rayael/shadow-hunters-ray.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/amritrau/shadow-hunters/issues"
+    "url": "https://github.com/Rayael/shadow-hunters-ray/issues"
   },
-  "homepage": "https://github.com/amritrau/shadow-hunters#readme"
+  "homepage": "https://github.com/Rayael/shadow-hunters-ray#readme"
 }
