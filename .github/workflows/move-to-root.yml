@@ -1,0 +1,49 @@
+name: Move site files to root
+
+# Run only when manually triggered
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Move contents from shadow-hunters-master to root
+        run: |
+          set -e
+          DIR="shadow-hunters-master"
+          if [ ! -d "$DIR" ]; then
+            echo "$DIR not found, nothing to do."
+            exit 0
+          fi
+
+          # enable moving dotfiles in bash
+          shopt -s dotglob || true
+
+          # move files (ignore errors)
+          mv "$DIR"/* . || true
+          mv "$DIR"/.[!.]* . || true
+
+          # remove the (now empty) folder
+          rm -rf "$DIR"
+
+          # configure git user (for the action commit)
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # commit & push if there are changes
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Move project files to repository root"
+            git push origin HEAD:main
+          fi
