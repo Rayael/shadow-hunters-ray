@@ -1,0 +1,7 @@
+matrix:
+  include:
+    - language: python
+      python: "3.6"
+      script:
+        - pytest --cov-config=.coveragerc --cov=shadow-hunters/
+        - pycodestyle --statistics -q .
