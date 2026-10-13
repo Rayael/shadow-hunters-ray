@@ -10,3 +10,6 @@ Werkzeug==0.15.5
 itsdangerous==1.1.0
 MarkupSafe==1.1.1
 gunicorn==20.1.0
+# Required by gevent event plugins
+zope.event==6.2
+zope.interface==8.6
