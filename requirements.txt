@@ -1,8 +1,7 @@
 Flask==1.0.2
 Flask-SocketIO==3.3.2
-# Use gevent worker instead of eventlet to avoid greenlet C-API build issues
-gevent==21.12.0
-gevent-websocket==0.10.1
+# Use eventlet server for Flask-SocketIO
+eventlet==0.33.3
 python-socketio==3.1.2
 python-engineio==3.8.2.post1
 Jinja2==2.11.3
@@ -10,6 +9,3 @@ Werkzeug==0.15.5
 itsdangerous==1.1.0
 MarkupSafe==1.1.1
 gunicorn==20.1.0
-# Required by gevent event plugins
-zope.event==6.2
-zope.interface==8.6
