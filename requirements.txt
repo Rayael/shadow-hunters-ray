@@ -1,6 +1,8 @@
 Flask==1.0.2
 Flask-SocketIO==3.3.2
-eventlet==0.33.3
+# Pin eventlet to a version compatible with Gunicorn's eventlet worker
+# Newer eventlet releases may change internal API; 0.30.2 is known to work.
+eventlet==0.30.2
 python-socketio==3.1.2
 python-engineio==3.8.2.post1
 Jinja2==2.11.3
