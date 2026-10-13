@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import random
 import os
 import re
@@ -81,6 +82,14 @@ def room(methods=['GET', 'POST']):
         if not username or not room_id:
             flash("Please enter a name and room ID")
             return redirect('/')
+
+        # access control: if ACCESS_CODE env var is set, require it
+        ACCESS_CODE = os.getenv('ACCESS_CODE')
+        if ACCESS_CODE:
+            provided = request.form.get('access_code', '').strip()
+            if provided != ACCESS_CODE:
+                flash("Access code incorrect or missing")
+                return redirect('/')
 
         # username and room ID validation
         uname_special = re.match(r"^[\w\d ]*$", username)
