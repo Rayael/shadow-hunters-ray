@@ -22,22 +22,40 @@ $(document).ready(function() {
         reconnection: false,
         'sync disconnect on unload': true
     });
+
+    socket.on('connect_error', function(err) {
+        console.error('Socket connect_error', err);
+    });
     socket.on('connect', function() {
+        console.log('Socket connected, id=', socket.id);
 
         // User joins the room
         socket.emit('join', usrctx );
 
+        // Setup send message helper
+        function sendMessage() {
+            var user_input = $('#message').val();
+            if (!user_input || !user_input.trim()) return;
+            console.debug('Emitting message', user_input);
+            socket.emit('message', { 'data': user_input });
+            $('#message').val('').focus();
+        }
+
         // Set up message posting with button presses
         var chat_form = $('#chat').on('submit', function(e) {
             e.preventDefault();
-            var user_input = $('#message').val();
-            socket.emit('message', { 'data': user_input });
-            $('#message').val('').focus();
+            sendMessage();
+        });
+        // Also handle send button click in case form submit handlers aren't firing
+        $('#chat').on('click', '.send', function(e) {
+            e.preventDefault();
+            sendMessage();
         });
 
         // Start game button
         var start_form = $('#start').on('submit', function(e) {
             e.preventDefault();
+            console.debug('Emitting start with n_players=', $('#nPlayers').val());
             socket.emit('start', { 'n_players': $('#nPlayers').val() });
         });
 
@@ -81,6 +99,7 @@ $(document).ready(function() {
 
         // Receive a message
         socket.on('message', function(msg) {
+            console.debug('Received message', msg);
 
             // Build message
             var html = '';
@@ -97,17 +116,17 @@ $(document).ready(function() {
 
             // Put message in chatbox and snap to bottom if already at bottom
             var chat = $("#message_holder");
-            if (chat.scrollTop() == chat[0].scrollHeight - chat[0].clientHeight) {
-                chat.append(html);
+            var atBottom = (chat.scrollTop() == chat[0].scrollHeight - chat[0].clientHeight);
+            chat.append(html);
+            if (atBottom) {
                 chat.scrollTop(chat[0].scrollHeight);
-            }
-            else {
-                chat.append(html);
             }
         });
 
         // Receive an ask
         socket.on('ask', function(data) {
+
+            console.debug('Received ask', data);
 
             // Add buttons for each option
             var option = '';
