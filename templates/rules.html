@@ -1,59 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shadow Hunters — Rules</title>
+
+  <style>
+  body, html {
+    height: 100%;
+    margin: 0;
+    font-family: Palatino, "Times New Roman", Times;
+    background-color: #111;
+    color: #fff;
   }
 
-  .nav a {
-    display:inline-block;
-    padding:5px;
+  .bg {
+    background-image: url('/static/gfx/waitRoom.svg');
+    height: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding-bottom: 60px;
   }
+
+  .nav {
+    list-style: none;
+    margin: 0;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav a img { vertical-align: middle; }
 
   .rules {
-    position: relative;
-    left: 25%;
-    width: 50%;
-    color: #FFFFFF;
-    padding-bottom: 20px;
+    max-width: 900px;
+    margin: 40px auto;
+    background: rgba(0,0,0,0.5);
+    padding: 24px;
+    border-radius: 8px;
   }
+
+  .rules h2, .rules h3, .rules p { color: #fff; }
 
   .gameimage {
     max-width: 100%;
-    max-height: 100%;
     display: block;
-    margin: auto auto;
+    margin: 8px auto;
   }
 
-  .portrait {
-    float: left;
-    margin: 0px 20px 0px 0px;
-  }
+  .portrait { float: left; margin: 0 20px 20px 0; }
 
+  a { color: #9cd6ff; }
+
+  @media (max-width: 800px) {
+    .rules { margin: 20px; padding: 16px; }
+  }
   </style>
-
 </head>
 
 <body>
   <div class="bg">
 
     <ul class="nav">
-      <a href="/" class="pull-left"><img src="/static/gfx/home.png" width="100"></a>
-      <a href="/" class="pull-left"><img src="/static/gfx/logo.png"></a>
-      <a href="/rules" class="pull-left"><img src="/static/gfx/rules.png" width="100"></a>
+      <li><a href="/"><img src="/static/gfx/home.png" width="72" alt="Home"></a></li>
+      <li><a href="/"><img src="/static/gfx/logo.png" alt="Logo"></a></li>
+      <li><a href="/rules"><img src="/static/gfx/rules.png" width="72" alt="Rules"></a></li>
     </ul>
 
     <div class="rules">
-      <h3 style="text-align: center">Number of Players: 4 to 8</h3>
-      <h3 style="text-align: center">Play Time: 30-45 min</h3>
-      <h3 style="text-align: center">Rules written by Max Levatich</h3>
-      <h4 style="text-align: center"><i>Found a bug? Report it <a href="https://github.com/Rayael/shadow-hunters-ray/issues/new" style="color: white">here</a> or check our <a href="https://github.com/Rayael/shadow-hunters-ray" style="color: white">code</a>!</i></h4>
+      <h1 style="text-align:center">Shadow Hunters — Rules</h1>
+      <h3 style="text-align:center">Number of Players: 4 to 8 — Play Time: 30–45 min</h3>
+      <p style="text-align:center">Rules written by Max Levatich — Found a bug? Report it <a href="https://github.com/Rayael/shadow-hunters-ray/issues/new" target="_blank">here</a>.</p>
 
       <h2>Overview</h2>
       <p>
-        Shadow Hunters is an online multiplayer game (based on the <a href="https://en.wikipedia.org/wiki/Shadow_Hunters" target="_blank" style="color: white">board game</a> of the same name) in which players assume the identities of characters belonging to three opposing factions. The Shadows, inhabitants of the underworld, aim to destroy all Hunters, while the Hunters, protectors of the mortal realm, seek to banish the Shadows. Neutrals, caught in the crossfire, pursue their own hidden objectives.<br>
-        <br>
-        As night settles on the ruins of abandoned town at the edge of a mysterious forest, the identities of ally and enemy alike are obscured by a shifting fog, and players must discover who is friend and who is foe before striking from the darkness!
+        Shadow Hunters is an online multiplayer game (based on the <a href="https://en.wikipedia.org/wiki/Shadow_Hunters" target="_blank">board game</a>) in which identities are hidden and players must discover allies and enemies.
       </p>
 
       <h2>How to Start a Game</h2>
       <p>
-        To play a game of Shadow Hunters, enter a username and room on the main page &ndash; clicking join will take you to a new page where you can talk to other players who have joined the same room. Once the desired number of players have joined the same room, any player can click the &lsquo;Start Game&rsquo; button to begin a game with those players.<br>
-        <br>
-        In the waiting room, the desired number of players for the game can also be specified above the &lsquo;Start Game&rsquo; button. If the number is greater than the number of players currently in the room, the remaining slots will be filled by computer players. (The number of players is submitted by the person who clicks &lsquo;Start Game&rsquo;; all other numbers will be disregarded).<br>
-        <br>
+        Enter a username and room on the main page &ndash; clicking Join takes you to the waiting room where you can chat with other players. Select the desired number of players then click "Start Game".
+      </p>
+
+      <h2>Gameplay Basics</h2>
+      <p>
+        Each player receives a character and an allegiance. During your turn you can move, attack, or use special abilities. Use the UI buttons in the game room to perform actions. The game continues until a win condition is met.
+      </p>
+
+      <h2>Tips</h2>
+      <ul>
+        <li>Use short, clear chat messages to coordinate.</li>
+        <li>If you disconnect, re-enter the same username and room to reconnect (if the game allows reconnections).</li>
+        <li>Names starting with "CPU" are reserved for computer players.</li>
+      </ul>
+
+      <h2>Credits</h2>
+      <p>Original rules: Max Levatich. Web UI and implementation: <a href="https://github.com/Rayael/shadow-hunters-ray" target="_blank">GitHub repo</a>.</p>
+
+      <p style="text-align:center; margin-top: 20px;"><img class="gameimage" src="/static/gfx/board_preview.png" alt="Game preview"></p>
+
+    </div>
+
+  </div>
+</body>
+</html>
