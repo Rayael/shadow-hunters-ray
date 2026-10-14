@@ -1,7 +1,7 @@
 // Don't do anything until the DOM loads
 // First, establish socket connection and set up handlers
 // Then, set up and start game
-$('document').ready(function() {
+$(document).ready(function() {
 
     // Forms are initially hidden
     $('#confirm').hide();
@@ -150,7 +150,7 @@ $('document').ready(function() {
         // Disconnect handler
         socket.on('disconnect', function(reason) {
             window.onbeforeunload = function() {};
-            alert("You have lost connection to the server – click 'Ok' to return to the home page, " +
+            alert("You have lost connection to the server –\u00a0click 'Ok' to return to the home page, " +
                   "where you may reconnect if you were in a game.");
             window.location = "/";
         });
