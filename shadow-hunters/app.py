@@ -4,6 +4,11 @@ import os
 import re
 import secrets
 import html
+import sys
+
+# Ensure the current module directory is on sys.path so sibling modules can be
+# imported when the app runs from a different working directory or as a module.
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # Compatibility shim for older packages that import MutableMapping from
 # `collections` instead of `collections.abc` (removed in Python 3.10).
