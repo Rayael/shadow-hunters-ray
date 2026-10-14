@@ -1,1 +1,1 @@
-# Notes: added zope.event and zope.interface to satisfy gevent plugin requirements
+Ensure both eventlet and gevent are available; include gevent-websocket and zope packages so Railpack's build-time gunicorn invocation (if present) succeeds. Procfile runs the module directly with python -m by default.
