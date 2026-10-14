@@ -5,6 +5,16 @@ import re
 import secrets
 import html
 
+# Compatibility shim for older packages that import MutableMapping from
+# `collections` instead of `collections.abc` (removed in Python 3.10).
+import collections
+try:
+    from collections import MutableMapping  # type: ignore
+except Exception:
+    from collections.abc import MutableMapping  # type: ignore
+    # Provide alias so third-party code importing from `collections` still works
+    collections.MutableMapping = MutableMapping
+
 from flask import (
     Flask, render_template, url_for, redirect,
     request, flash, send_from_directory
@@ -490,41 +500,4 @@ def on_disconnect():
     # Close room if it is now empty, or replace player with AI if it's in game
     if not rooms[room_id]['connections'].keys():
 
-        # Close the room
-        if gc and [p for p in gc.players if p.socket_id == request.sid]:
-            [p for p in gc.players if p.socket_id == request.sid][0].ai = True
-            gc.tell_h = lambda x, y, *z: 0
-            gc.show_h = lambda x, *y: 0
-            gc.update_h = lambda: 0
-        socketio.close_room(room_id)
-        if room_id in rooms:
-            rooms.pop(room_id)
-        R.connection_lock.release()
-
-    elif gc and not gc.game_over:
-
-        # If disconnected person was spectating, or dead, or if the game is
-        # over, don't swap them for an AI
-        player_in_game = [p for p in gc.players if p.socket_id == request.sid]
-        if not player_in_game or player_in_game[0].state == C.PlayerState.Dead:
-            R.connection_lock.release()
-            return
-
-        # Swap player for AI
-        player_in_game[0].ai = True
-        rooms[room_id]['reconnections'][player_in_game[0].user_id] = 'cookie'
-        R.connection_lock.release()
-        socket_tell('A computer player has taken their place!',
-                    [], gc, room_id)
-
-    else:
-
-        # Always release lock!
-        R.connection_lock.release()
-
-
-if __name__ == '__main__':
-    # In production, use the PORT provided by the platform (Railway)
-    port = int(os.getenv('PORT', 5000))
-    # Disable debug in production
-    socketio.run(app, debug=False, host="0.0.0.0", port=port)
+    
