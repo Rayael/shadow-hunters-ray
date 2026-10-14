@@ -1,0 +1,14 @@
+{
+  "phases": {
+    "build": {
+      "cmds": [
+        "pip install -r requirements.txt"
+      ]
+    },
+    "start": {
+      "cmds": [
+        "python -u -m shadow-hunters.app"
+      ]
+    }
+  }
+}
