@@ -1,62 +1,72 @@
-
-
-#ingame {
-  top: 375px;
-  left: 765px;
-}
-
-</style>
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shadow Hunters — Room</title>
+  <style>
+    /* minimal styling so the layout matches expectations */
+    body, html { height:100%; margin:0; font-family: Palatino, "Times New Roman", Times; background:#111; color:#fff; }
+    .bg { background-image: url('/static/gfx/waitRoom.svg'); background-position:center; background-repeat:no-repeat; background-size:cover; min-height:100vh; }
+    .nav { list-style:none; margin:0; padding:10px 20px; display:flex; gap:10px; align-items:center; }
+    .container { position: relative; max-width: 1066px; margin: 0 auto; padding-top: 10px; }
+    #chatbox { position: absolute; right: 10px; top: 80px; width: 300px; background: rgba(255,255,255,0.06); padding:8px; border-radius:6px; }
+    #board { width: 800px; height: 600px; margin: 8px auto; background: transparent; }
+  </style>
 </head>
-
 <body>
   <div class="bg">
-
     <ul class="nav">
-      <a href="/" class="pull-left"><img src="/static/gfx/home.png" width="100"></a>
-      <a href="/" class="pull-left"><img src="/static/gfx/logo.png"></a>
-      <a href="/rules" target="_blank" class="pull-left"><img src="/static/gfx/rules.png" width="100"></a>
+      <li><a href="/"><img src="/static/gfx/home.png" width="72" alt="Home"></a></li>
+      <li><a href="/"><img src="/static/gfx/logo.png" alt="Logo"></a></li>
+      <li><a href="/rules"><img src="/static/gfx/rules.png" width="72" alt="Rules"></a></li>
     </ul>
 
     <div class="container">
+      <!-- Expose Flask context to client JS -->
+      <script>var usrctx = {{ context | tojson | safe }};</script>
+
       <div id="startButton">
-        <form id="start">
-          <input id="start-game" type="submit" class="start" value="Start Game"/>
-        </form>
+        <form id="start"><input id="start-game" type="submit" class="start" value="Start Game"/></form>
       </div>
+
       <form id="selectPlayers">
         <select id="nPlayers">
-          <option value="4"> 4 Players </option>
-          <option value="5" selected> 5 Players </option>
-          <option value="6"> 6 Players </option>
-          <option value="7"> 7 Players </option>
-          <option value="8"> 8 Players </option>
+          <option value="4">4 Players</option>
+          <option value="5" selected>5 Players</option>
+          <option value="6">6 Players</option>
+          <option value="7">7 Players</option>
+          <option value="8">8 Players</option>
         </select>
       </form>
-      <form id="select">
-      </form>
-      <form id="reveal">
-        <input type="submit" class="reveal" value="Reveal"/>
-      </form>
-      <form id="special">
-        <input type="submit" class="special" value="Special"/>
-      </form>
-      <div id="ingame">
-        <form id="confirm">
-        </form>
-        <form id="yesno">
-        </form>
-      </div>
+
       <div id="board"></div>
+
       <div id="chatbox">
-        <div id="message_holder"></div><br>
+        <div id="message_holder" style="height:260px; overflow:auto;"></div><br>
         <form id="chat">
-          <input type="text" id="message" placeholder="message" autocomplete="off"/>
+          <input type="text" id="message" placeholder="message" autocomplete="off" style="width:70%"/>
           <input type="submit" class="send" value="Send"/>
         </form>
       </div>
-    </div>
 
+      <!-- Interactive forms used by setup.js / game -->
+      <form id="select" style="display:none"></form>
+      <form id="confirm" style="display:none"></form>
+      <form id="yesno" style="display:none"></form>
+      <form id="reveal" style="display:none"><input type="submit" class="reveal" value="Reveal"/></form>
+      <form id="special" style="display:none"><input type="submit" class="special" value="Special"/></form>
+    </div>
   </div>
+
+  <!-- Load libs first -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+
+  <!-- Your game/client code -->
+  <script src="/static/waitRoom.js"></script>
+  <script src="/static/gameBoard.js"></script>
+  <script src="/static/setup.js"></script>
 </body>
 </html>
