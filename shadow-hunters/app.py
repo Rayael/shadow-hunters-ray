@@ -41,6 +41,7 @@ app = Flask(
     __name__, template_folder=template_dir,
     static_folder=static_dir, static_url_path='/static'
 )
+# Use a stable SECRET_KEY when provided; otherwise generate one per process.
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 socketio = SocketIO(app, async_handlers=True)
@@ -73,6 +74,8 @@ AI_SLEEP = float(os.getenv('AI_SLEEP', 2.0))
 # the username of that connection
 # TODO replace with Redis (#209)
 rooms = {}
+# Single-game mode: only one active game code allowed at a time
+GAME_CODE = None
 
 # APP ROUTES
 
@@ -89,22 +92,26 @@ def rules():
 
 @app.route('/room', methods=['GET', 'POST'])
 def room(methods=['GET', 'POST']):
+    global GAME_CODE
     if request.method == 'POST':
 
         # make sure room and username were provided
         username = request.form.get('username').strip()
-        room_id = request.form.get('room_id').strip()
+        room_id = request.form.get('room_id', request.form.get('access_code', '')).strip()
         if not username or not room_id:
             flash("Please enter a name and room ID")
             return redirect('/')
 
-        # access control: if ACCESS_CODE env var is set, require it
-        ACCESS_CODE = os.getenv('ACCESS_CODE')
-        if ACCESS_CODE:
-            provided = request.form.get('access_code', '').strip()
-            if provided != ACCESS_CODE:
-                flash("Access code incorrect or missing")
-                return redirect('/')
+        # Single-game behavior: accept the first code as the game's code; subsequent
+        # joins must use the same code. This avoids managing multiple rooms.
+        if GAME_CODE is None:
+            GAME_CODE = room_id
+        elif room_id != GAME_CODE:
+            flash("Incorrect game code — join the existing game or start a new one")
+            return redirect('/')
+
+        # Normalize to the canonical game code
+        room_id = GAME_CODE
 
         # username and room ID validation
         uname_special = re.match(r"^[\w\d ]*$", username)
@@ -514,6 +521,11 @@ def on_disconnect():
         socketio.close_room(room_id)
         if room_id in rooms:
             rooms.pop(room_id)
+        # If the closed room was the current game code, clear it so a new game
+        # can be started later.
+        global GAME_CODE
+        if GAME_CODE == room_id:
+            GAME_CODE = None
         R.connection_lock.release()
 
     elif gc and not gc.game_over:
