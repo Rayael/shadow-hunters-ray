@@ -32,6 +32,16 @@ $(document).ready(function() {
         // User joins the room
         socket.emit('join', usrctx );
 
+        // Receive updated member list from the server
+        socket.on('members', function(data) {
+            var list = $('#members-list');
+            if (!list.length) return;
+            list.empty();
+            (data.members || []).forEach(function(name) {
+                list.append('<li>' + name + '</li>');
+            });
+        });
+
         // Setup send message helper
         function sendMessage() {
             var user_input = $('#message').val();

@@ -72,6 +72,10 @@ def favicon():
 SOCKET_SLEEP = float(os.getenv('SOCKET_SLEEP', 0.25))
 AI_SLEEP = float(os.getenv('AI_SLEEP', 2.0))
 
+# Single-room mode: fixed room id and shared access code
+LOBBY_ROOM = os.getenv('LOBBY_ROOM', 'shadow-hunters')
+GAME_CODE = os.getenv('GAME_CODE', 'shadowhunters')
+
 # rooms are indexed by room_id, with a status, gc, and connections field
 # status is LOBBY or GAME. gc is None if status is LOBBY, otherwise a
 # GameContext object connections is a dict indexed by socket_id whose value is
@@ -96,73 +100,69 @@ def rules():
 def room(methods=['GET', 'POST']):
     if request.method == 'POST':
 
-        # make sure room and username were provided
+        # Single-room mode: only a username is required; room_id is fixed
         username = request.form.get('username').strip()
-        room_id = request.form.get('room_id').strip()
-        if not username or not room_id:
-            flash("Please enter a name and room ID")
+        room_id = LOBBY_ROOM
+        if not username:
+            flash("Please enter a name")
             return redirect('/')
 
-        # access control: if ACCESS_CODE env var is set, require it
-        ACCESS_CODE = os.getenv('ACCESS_CODE')
-        if ACCESS_CODE:
-            provided = request.form.get('access_code', '').strip()
-            if provided != ACCESS_CODE:
-                flash("Access code incorrect or missing")
-                return redirect('/')
+        # access control: shared access code (GAME_CODE)
+        provided = request.form.get('access_code', '').strip()
+        if provided != GAME_CODE:
+            flash("Code d'accès incorrect")
+            return redirect('/')
 
-        # username and room ID validation
+        # username validation
         uname_special = re.match(r"^[\w\d ]*$", username)
-        room_special = re.match(r"^[\w\d ]*$", room_id)
-        if len(username) > 10 or len(room_id) > 10:
-            flash("Name and room ID must not exceed 10 characters")
+        if len(username) > 10:
+            flash("Name must not exceed 10 characters")
             return redirect('/')
-        elif not uname_special or not room_special:
-            flash("Name and room ID must not contain special characters")
+        elif not uname_special:
+            flash("Name must not contain special characters")
             return redirect('/')
-        elif username.isdigit() or room_id.isdigit():
-            flash("Name and room ID must not be numbers")
+        elif username.isdigit():
+            flash("Name must not be a number")
             return redirect('/')
-        elif username == "undefined" or room_id == "undefined":
-            flash("Name and room ID must not be 'undefined'")
+        elif username == "undefined":
+            flash("Name must not be 'undefined'")
             return redirect('/')
         elif username.startswith('CPU') or (username in get_reserved_words()):
             m = "The name '{}' is reserved for gameplay. Please choose another"
             flash(m.format(username))
             return redirect('/')
 
-        # check for username taken
+        # check for username taken / game already in progress
         R.connection_lock.acquire()
-        if (room_id in rooms):
+        if room_id in rooms:
             if username in rooms[room_id]['connections'].values():
                 flash("Someone in the room has taken your name")
                 R.connection_lock.release()
                 return redirect('/')
 
-        # check for game already in progress
-        if (room_id in rooms) and rooms[room_id]['status'] == 'GAME':
-            public_state, private_state = rooms[room_id]['gc'].dump()
-            context = {
-                'name': username,
-                'room_id': room_id,
-                'spectate': True,
-                'reconnect': False,
-                'gc_data': {'public': public_state}
-            }
+            if rooms[room_id]['status'] == 'GAME':
+                public_state, private_state = rooms[room_id]['gc'].dump()
+                context = {
+                    'name': username,
+                    'room_id': room_id,
+                    'spectate': True,
+                    'reconnect': False,
+                    'gc_data': {'public': public_state}
+                }
 
-            # Reconnect to game
-            if username in rooms[room_id]['reconnections']:
-                context['spectate'] = False
-                context['reconnect'] = True
-                context['gc_data']['private'] = [
-                    p for p in private_state if p['user_id'] == username][0]
-                ai_player = [p for p in rooms[room_id]
-                             ['gc'].players if p.user_id == username][0]
-            R.connection_lock.release()
-            return render_template('room.html', context=context)
+                # Reconnect to game
+                if username in rooms[room_id]['reconnections']:
+                    context['spectate'] = False
+                    context['reconnect'] = True
+                    context['gc_data']['private'] = [
+                        p for p in private_state if p['user_id'] == username][0]
+                    ai_player = [p for p in rooms[room_id]
+                                 ['gc'].players if p.user_id == username][0]
+                R.connection_lock.release()
+                return render_template('room.html', context=context)
         R.connection_lock.release()
 
-        # send player to room
+        # send player to the single lobby room
         return render_template('room.html', context={
             'name': username,
             'room_id': room_id,
@@ -248,6 +248,13 @@ def socket_update(data, room_id):
     socketio.emit('update', data, room=room_id)
     if room_id in rooms and rooms[room_id]['gc']:
         socketio.sleep(SOCKET_SLEEP)
+
+
+def emit_member_list(room_id):
+    """Emit the list of currently connected usernames to everyone in the room."""
+    if room_id in rooms:
+        members = list(rooms[room_id]['connections'].values())
+        socketio.emit('members', {'members': members}, room=room_id)
 
 # SOCKET RECEIVERS
 
@@ -452,11 +459,11 @@ def on_message(json):
 @socketio.on('join')
 def on_join(json):
 
-    # Get fields
-    room_id = json['room_id']
+    # Single-room mode: force the fixed lobby room id
+    room_id = LOBBY_ROOM
     name = json['name']
-    reconnect = json['reconnect']
-    spectate = json['spectate']
+    reconnect = json.get('reconnect', False)
+    spectate = json.get('spectate', False)
 
     try:
         print(f"DEBUG on_join: sid={request.sid} room_id={room_id} name={name} reconnect={reconnect} spectate={spectate}")
@@ -511,6 +518,9 @@ def on_join(json):
     if not reconnect:
         socket_tell(msg, [], None, room_id, client=(request.sid,))
 
+    # Broadcast updated member list to everyone in the room
+    emit_member_list(room_id)
+
 
 @socketio.on('disconnect')
 def on_disconnect():
@@ -550,12 +560,14 @@ def on_disconnect():
         player_in_game = [p for p in gc.players if p.socket_id == request.sid]
         if not player_in_game or player_in_game[0].state == C.PlayerState.Dead:
             R.connection_lock.release()
+            emit_member_list(room_id)
             return
 
         # Swap player for AI
         player_in_game[0].ai = True
         rooms[room_id]['reconnections'][player_in_game[0].user_id] = 'cookie'
         R.connection_lock.release()
+        emit_member_list(room_id)
         socket_tell('A computer player has taken their place!',
                     [], gc, room_id)
 
@@ -563,6 +575,7 @@ def on_disconnect():
 
         # Always release lock!
         R.connection_lock.release()
+        emit_member_list(room_id)
 
 
 if __name__ == '__main__':

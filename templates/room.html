@@ -11,6 +11,10 @@
     .nav { list-style:none; margin:0; padding:10px 20px; display:flex; gap:10px; align-items:center; }
     .container { position: relative; max-width: 1066px; margin: 0 auto; padding-top: 10px; }
     #chatbox { position: absolute; right: 10px; top: 80px; width: 300px; background: rgba(255,255,255,0.06); padding:8px; border-radius:6px; }
+    #players-list { position: absolute; left: 10px; top: 80px; width: 200px; background: rgba(255,255,255,0.06); padding:8px; border-radius:6px; }
+    #players-list h3 { margin:0 0 8px 0; font-size:14px; border-bottom:1px solid #444; padding-bottom:4px; color:#fff; }
+    #members-list { list-style:none; padding:0; margin:0; max-height:220px; overflow-y:auto; }
+    #members-list li { padding:4px 0; border-bottom:1px solid #222; font-size:13px; color:#ddd; }
     #board { width: 800px; height: 600px; margin: 8px auto; background: transparent; }
   </style>
 </head>
@@ -48,6 +52,11 @@
           <input type="text" id="message" placeholder="message" autocomplete="off" style="width:70%"/>
           <input type="submit" class="send" value="Send"/>
         </form>
+      </div>
+
+      <div id="players-list">
+        <h3>Joueurs connectés</h3>
+        <ul id="members-list"></ul>
       </div>
 
       <!-- Interactive forms used by setup.js / game -->
