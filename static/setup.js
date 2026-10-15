@@ -18,7 +18,7 @@ $(document).ready(function() {
     // Initial connection
     // Use same-origin/protocol so HTTPS sites don't attempt to connect over http:// (mixed content).
     // Socket.IO will automatically choose ws/wss based on the current page.
-    socket = io.connect(window.location.origin, {
+    socket = io(window.location.origin, {
         reconnection: false,
         'sync disconnect on unload': true
     });

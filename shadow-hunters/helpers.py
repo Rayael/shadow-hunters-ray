@@ -46,8 +46,8 @@ def color_format(str, args, gc):
             colors.append(C.TEXT_COLORS['server'])
         colors.append(C.TEXT_COLORS['server'])
 
-    # assign strings
-    args += ['']
+    # assign strings (copy args to avoid mutating the caller's list)
+    args = list(args) + ['']
     strings = sum([[s, args.pop(0)] for s in str.split('{}')], [])[:-1]
 
     # return tuple of strings and colors

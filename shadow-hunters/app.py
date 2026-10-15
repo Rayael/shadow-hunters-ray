@@ -34,6 +34,10 @@ from helpers import color_format, get_room_id, get_reserved_words
 import constants as C
 import concurrency as R
 
+# eventlet monkey-patch for async I/O (required by Flask-SocketIO in production)
+import eventlet
+eventlet.monkey_patch()
+
 # app config
 template_dir = os.path.abspath('./templates')
 static_dir = os.path.abspath('./static')
@@ -43,7 +47,8 @@ app = Flask(
 )
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-socketio = SocketIO(app, async_handlers=True)
+socketio = SocketIO(app, async_handlers=True, async_mode='eventlet',
+                    cors_allowed_origins="*")
 
 
 # disable caching
@@ -424,13 +429,8 @@ def on_message(json):
     R.connection_lock.acquire()
     room_id = get_room_id(rooms, request.sid)
     if not room_id:
-        # Helpful debug + fallback echo so user sees their message while debugging
-        print(f"WARNING: no room for sid={request.sid}, echoing back locally")
+        # Socket is not in any room; silently drop the message
         R.connection_lock.release()
-        try:
-            socketio.emit('message', {'name': 'server', 'data': '(local echo) ' + json.get('data',''), 'color': C.TEXT_COLORS['server']}, room=request.sid)
-        except Exception:
-            pass
         return
     json['name'] = rooms[room_id]['connections'][request.sid]
 
@@ -517,6 +517,9 @@ def on_disconnect():
 
     # Get room_id, name, and game context
     room_id = get_room_id(rooms, request.sid)
+    if not room_id:
+        # Socket was not in any room; nothing to clean up
+        return
     name = rooms[room_id]['connections'][request.sid]
     gc = rooms[room_id]['gc']
     socket_tell('{} has left the room', [name], gc, room_id)

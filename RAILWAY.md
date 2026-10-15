@@ -2,7 +2,7 @@
 
 1) On railway.app create a new project -> Deploy from GitHub -> select this repository (Rayael/shadow-hunters-ray) and connect.
 
-2) Railway will detect Python. If needed set the start command to use the Procfile: `web: gunicorn -k eventlet -w 1 "shadow-hunters.app:app"` (Procfile is already in the repo).
+2) Railway will detect Python. Use the start command from the Procfile: `web: python -u -m shadow-hunters.app` (Procfile is already in the repo).
 
 3) Environment variables to add in Railway (Project > Variables):
    - SECRET_KEY = (generate a random long string)
