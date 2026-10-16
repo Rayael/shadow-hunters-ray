@@ -74,7 +74,7 @@ AI_SLEEP = float(os.getenv('AI_SLEEP', 2.0))
 
 # Single-room mode: fixed room id and shared access code
 LOBBY_ROOM = os.getenv('LOBBY_ROOM', 'shadow-hunters')
-GAME_CODE = os.getenv('GAME_CODE', 'shadowhunters')
+GAME_CODE = os.getenv('GAME_CODE', 'EDGAR')
 
 # rooms are indexed by room_id, with a status, gc, and connections field
 # status is LOBBY or GAME. gc is None if status is LOBBY, otherwise a
@@ -427,33 +427,44 @@ def on_answer(json):
 @socketio.on('message')
 def on_message(json):
 
-    # Message fields
+    # Debug
     try:
         print(f"DEBUG on_message recv: sid={request.sid} payload={json}")
     except Exception:
-        print(f"DEBUG on_message recv: sid=unknown payload={json}")
+        print("DEBUG on_message recv: sid=unknown")
+
+    room_id = None
+    name = 'Unknown'
+    color = C.TEXT_COLORS['server']
 
     R.connection_lock.acquire()
-    room_id = get_room_id(rooms, request.sid)
-    if not room_id:
-        # Socket is not in any room; silently drop the message
-        R.connection_lock.release()
-        return
-    json['name'] = rooms[room_id]['connections'][request.sid]
+    try:
+        room_id = get_room_id(rooms, request.sid)
+        if not room_id:
+            # Socket is not in any room; silently drop the message
+            return
 
-    # If player is not in game, or spectating, their color is grey
-    if (rooms[room_id]['status'] != 'GAME') or (request.sid not in [
-            p.socket_id for p in rooms[room_id]['gc'].players]):
-        json['color'] = C.TEXT_COLORS['server']
-    else:
-        json['color'] = [p.color for p in rooms[room_id]
-                         ['gc'].players if p.socket_id == request.sid][0]
-    R.connection_lock.release()
+        name = rooms[room_id]['connections'].get(request.sid, 'Unknown')
+
+        # If player is not in game, or spectating, their color is grey
+        if (rooms[room_id]['status'] != 'GAME') or (
+                request.sid not in [p.socket_id for p in rooms[room_id]['gc'].players]):
+            color = C.TEXT_COLORS['server']
+        else:
+            color = [p.color for p in rooms[room_id]
+                     ['gc'].players if p.socket_id == request.sid][0]
+    finally:
+        R.connection_lock.release()
 
     # Broadcast non-empty message
-    if 'data' in json and json['data'].strip():
-        json['data'] = html.escape(json['data'])
-        socketio.emit('message', json, room=room_id)
+    user_input = json.get('data', '')
+    if user_input and str(user_input).strip():
+        packet = {
+            'data': str(user_input),
+            'name': name,
+            'color': color,
+        }
+        socketio.emit('message', packet, room=room_id)
 
 
 @socketio.on('join')
@@ -480,27 +491,28 @@ def on_join(json):
 
     # Create room if it doesn't exist and add player to room
     R.connection_lock.acquire()
-    if room_id not in rooms:
-        if spectate or reconnect:
-            R.connection_lock.release()
-            socketio.disconnect(request.sid)
-            return
-        rooms[room_id] = {'status': 'LOBBY', 'gc': None,
-                          'connections': {}, 'reconnections': {}}
+    try:
+        if room_id not in rooms:
+            if spectate or reconnect:
+                socketio.disconnect(request.sid)
+                return
+            rooms[room_id] = {'status': 'LOBBY', 'gc': None,
+                              'connections': {}, 'reconnections': {}}
 
-    # If this is a reconnection event, change player's socket id and AI status
-    # in game context
-    if reconnect:
-        del rooms[room_id]['reconnections'][name]
-        player = [p for p in rooms[room_id]
-                  ['gc'].players if p.user_id == name][0]
-        player.socket_id = request.sid
-        player.ai = False
+        # If this is a reconnection event, change player's socket id and AI status
+        # in game context
+        if reconnect:
+            del rooms[room_id]['reconnections'][name]
+            player = [p for p in rooms[room_id]
+                      ['gc'].players if p.user_id == name][0]
+            player.socket_id = request.sid
+            player.ai = False
 
-    # Add new player to room
-    rooms[room_id]['connections'][request.sid] = name
-    join_room(room_id)
-    R.connection_lock.release()
+        # Add new player to room
+        rooms[room_id]['connections'][request.sid] = name
+        join_room(room_id)
+    finally:
+        R.connection_lock.release()
 
     # Emit welcome message to new player
     msg = 'Welcome to Shadow Hunters Room: ' + room_id
@@ -536,46 +548,47 @@ def on_disconnect():
 
     # Remove user from the room, gracefully handling duplicate disconnects
     R.connection_lock.acquire()
-    if request.sid in rooms[room_id]['connections']:
-        rooms[room_id]['connections'].pop(request.sid)
+    try:
+        if request.sid in rooms[room_id]['connections']:
+            rooms[room_id]['connections'].pop(request.sid)
 
-    # Close room if it is now empty, or replace player with AI if it's in game
-    if not rooms[room_id]['connections'].keys():
+        # Close room if it is now empty, or replace player with AI if it's in game
+        if not rooms[room_id]['connections'].keys():
 
-        # Close the room
-        if gc and [p for p in gc.players if p.socket_id == request.sid]:
-            [p for p in gc.players if p.socket_id == request.sid][0].ai = True
-            gc.tell_h = lambda x, y, *z: 0
-            gc.show_h = lambda x, *y: 0
-            gc.update_h = lambda: 0
-        socketio.close_room(room_id)
-        if room_id in rooms:
-            rooms.pop(room_id)
-        R.connection_lock.release()
+            # Close the room
+            if gc and [p for p in gc.players if p.socket_id == request.sid]:
+                [p for p in gc.players if p.socket_id == request.sid][0].ai = True
+                gc.tell_h = lambda x, y, *z: 0
+                gc.show_h = lambda x, *y: 0
+                gc.update_h = lambda: 0
+            socketio.close_room(room_id)
+            if room_id in rooms:
+                rooms.pop(room_id)
+            # Room closed: no member list to broadcast
 
-    elif gc and not gc.game_over:
+        elif gc and not gc.game_over:
 
-        # If disconnected person was spectating, or dead, or if the game is
-        # over, don't swap them for an AI
-        player_in_game = [p for p in gc.players if p.socket_id == request.sid]
-        if not player_in_game or player_in_game[0].state == C.PlayerState.Dead:
-            R.connection_lock.release()
+            # If disconnected person was spectating, or dead, or if the game is
+            # over, don't swap them for an AI
+            player_in_game = [p for p in gc.players if p.socket_id == request.sid]
+            if not player_in_game or player_in_game[0].state == C.PlayerState.Dead:
+                # Player not in game or dead: just update member list
+                emit_member_list(room_id)
+                return
+
+            # Swap player for AI
+            player_in_game[0].ai = True
+            rooms[room_id]['reconnections'][player_in_game[0].user_id] = 'cookie'
             emit_member_list(room_id)
-            return
+            socket_tell('A computer player has taken their place!',
+                        [], gc, room_id)
 
-        # Swap player for AI
-        player_in_game[0].ai = True
-        rooms[room_id]['reconnections'][player_in_game[0].user_id] = 'cookie'
+        else:
+
+            # Spectator or game over: update member list
+            emit_member_list(room_id)
+    finally:
         R.connection_lock.release()
-        emit_member_list(room_id)
-        socket_tell('A computer player has taken their place!',
-                    [], gc, room_id)
-
-    else:
-
-        # Always release lock!
-        R.connection_lock.release()
-        emit_member_list(room_id)
 
 
 if __name__ == '__main__':

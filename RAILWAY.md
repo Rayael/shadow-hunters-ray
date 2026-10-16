@@ -6,11 +6,11 @@
 
 3) Environment variables to add in Railway (Project > Variables):
    - SECRET_KEY = (generate a random long string)
-   - ACCESS_CODE = (shared code for your friends, e.g. "horseshoe123")
+   - GAME_CODE = (shared access code for your friends, default "Edgar")
    - SOCKET_SLEEP (optional)
    - AI_SLEEP (optional)
 
 4) Choose the free plan for the service. The app uses eventlet and should run within Railway's free limits for a few concurrent players (0.5GB RAM). If you observe memory issues, reduce AI or number of players.
 
-5) Once deployed, share the Railway service URL with your friends and the ACCESS_CODE.
+5) Once deployed, share the Railway service URL with your friends and the GAME_CODE.
 
