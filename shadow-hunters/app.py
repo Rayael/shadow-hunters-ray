@@ -5,6 +5,7 @@ import re
 import secrets
 import html
 import sys
+import time
 
 # Ensure the current module directory is on sys.path so sibling modules can be
 # imported when the app runs from a different working directory or as a module.
@@ -34,9 +35,88 @@ from helpers import color_format, get_room_id, get_reserved_words
 import constants as C
 import concurrency as R
 
-# eventlet monkey-patch for async I/O (required by Flask-SocketIO in production)
-import eventlet
-eventlet.monkey_patch()
+import logging
+import json
+from datetime import datetime, timezone
+
+# Structured JSON logging on stdout.
+class _JsonFormatter(logging.Formatter):
+    def format(self, record):
+        payload = {
+            'ts': datetime.now(timezone.utc).isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+        }
+        if record.exc_info:
+            payload['exc_info'] = self.formatException(record.exc_info)
+        return json.dumps(payload)
+
+_log_handler = logging.StreamHandler()
+_log_handler.setFormatter(_JsonFormatter())
+game_logger = logging.getLogger('shadow-hunters')
+game_logger.setLevel(os.getenv('LOG_LEVEL', 'INFO').upper())
+game_logger.addHandler(_log_handler)
+game_logger.propagate = False
+
+# Room store abstraction: in-memory by default, Redis-backed metadata when
+# REDIS_URL is set. The live GameContext stays bound to the local process.
+class RoomStore:
+    def __init__(self):
+        self._rooms = {}
+        self._redis = None
+        redis_url = os.getenv('REDIS_URL')
+        if redis_url:
+            try:
+                import redis as _redis  # type: ignore
+                self._redis = _redis.from_url(redis_url, decode_responses=True)
+                self._redis.ping()
+                game_logger.info('Redis room store connected')
+            except Exception:  # noqa: BLE001
+                game_logger.warning('Redis unavailable; falling back to in-memory rooms')
+                self._redis = None
+
+    def __contains__(self, room_id):
+        return room_id in self._rooms
+
+    def __getitem__(self, room_id):
+        return self._rooms[room_id]
+
+    def __setitem__(self, room_id, value):
+        self._rooms[room_id] = value
+        self._persist(room_id)
+
+    def __delitem__(self, room_id):
+        self._rooms.pop(room_id, None)
+        if self._redis:
+            try:
+                self._redis.delete(f'rooms:{room_id}')
+            except Exception:  # noqa: BLE001
+                pass
+
+    def get(self, room_id, default=None):
+        return self._rooms.get(room_id, default)
+
+    def pop(self, room_id, default=None):
+        self.__delitem__(room_id)
+        return self._rooms.pop(room_id, default)
+
+    def keys(self):
+        return self._rooms.keys()
+
+    def _persist(self, room_id):
+        if not self._redis:
+            return
+        try:
+            room = self._rooms[room_id]
+            payload = {
+                'status': room['status'],
+                'connections': json.dumps(room['connections']),
+                'reconnections': json.dumps(room.get('reconnections', {})),
+            }
+            self._redis.hset(f'rooms:{room_id}', mapping=payload)
+        except Exception:  # noqa: BLE001
+            game_logger.warning('Redis persist failed for %s', room_id)
 
 # app config
 template_dir = os.path.abspath('./templates')
@@ -47,7 +127,7 @@ app = Flask(
 )
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-socketio = SocketIO(app, async_handlers=True, async_mode='eventlet',
+socketio = SocketIO(app, async_handlers=True, async_mode='threading',
                     cors_allowed_origins="*")
 
 
@@ -72,6 +152,10 @@ def favicon():
 SOCKET_SLEEP = float(os.getenv('SOCKET_SLEEP', 0.25))
 AI_SLEEP = float(os.getenv('AI_SLEEP', 2.0))
 
+# Maximum seconds to wait for a human player to answer an `ask`. After that
+# an automatic answer is chosen so the game loop never blocks forever.
+ASK_TIMEOUT = float(os.getenv('ASK_TIMEOUT', '60'))
+
 # Single-room mode: fixed room id and shared access code
 LOBBY_ROOM = os.getenv('LOBBY_ROOM', 'shadow-hunters')
 GAME_CODE = os.getenv('GAME_CODE', 'EDGAR')
@@ -80,8 +164,8 @@ GAME_CODE = os.getenv('GAME_CODE', 'EDGAR')
 # status is LOBBY or GAME. gc is None if status is LOBBY, otherwise a
 # GameContext object connections is a dict indexed by socket_id whose value is
 # the username of that connection
-# TODO replace with Redis (#209)
-rooms = {}
+# Backed by RoomStore (in-memory by default, Redis metadata when REDIS_URL is set).
+rooms = RoomStore()
 
 # APP ROUTES
 
@@ -96,12 +180,18 @@ def rules():
     return render_template('rules.html')
 
 
+@app.route('/healthz')
+def healthz():
+    """Health-check endpoint for load balancers / orchestrators."""
+    return {'status': 'ok'}, 200
+
+
 @app.route('/room', methods=['GET', 'POST'])
 def room(methods=['GET', 'POST']):
     if request.method == 'POST':
 
         # Single-room mode: only a username is required; room_id is fixed
-        username = request.form.get('username').strip()
+        username = (request.form.get('username') or '').strip()
         room_id = LOBBY_ROOM
         if not username:
             flash("Please enter a name")
@@ -203,8 +293,24 @@ def socket_ask(form, data, user_id, room_id):
     mailbox['answered'] = False
     socketio.emit('ask', data, room=sid)
 
-    # Loop until an answer is received
+    # Loop until an answer is received (with a hard timeout so a missing
+    # human response can never freeze the whole game loop).
+    deadline = time.time() + ASK_TIMEOUT
+    auto_answered = False
     while not mailbox['answered']:
+        if time.time() > deadline:
+            auto_answered = True
+            mailbox['answered'] = True
+            mailbox['sid'] = sid
+            mailbox['data'] = {'value': data['options'][0]}
+            game_logger.warning(
+                'ask timeout for player %s in room %s: auto-answering %r',
+                player.user_id, room_id, data['options'][0],
+            )
+            socket_tell(
+                "{} n'a pas répondu à temps : réponse automatique.",
+                [player.user_id], gc, room_id)
+            break
         while not mailbox['answered']:
             # If a player swaps out for an AI during an ask, the piggyback
             # agent answers for them
@@ -213,12 +319,17 @@ def socket_ask(form, data, user_id, room_id):
                 return player.agent.choose_action(
                     data['options'], player=player, gc=player.gc
                 )
+            # Re-check the deadline while sleeping
+            if time.time() > deadline:
+                break
             socketio.sleep(SOCKET_SLEEP)
 
         # Validate answerer and answer
         invalid_option = mailbox['data']['value'] not in data['options']
         if mailbox['sid'] != sid or invalid_option:
             mailbox['answered'] = False
+        elif auto_answered:
+            break
 
     # Return answer
     mailbox['answered'] = False
@@ -256,90 +367,134 @@ def emit_member_list(room_id):
         members = list(rooms[room_id]['connections'].values())
         socketio.emit('members', {'members': members}, room=room_id)
 
+
+def socket_game_error(message, room_id=None, client=None):
+    """Emit a user-facing game error so the client can show an error popup.
+
+    `message` is shown to the player(s). If `client` is given it is a
+    single-sid target, otherwise the whole room is notified.
+    """
+    packet = {'error': str(message)}
+    if client:
+        socketio.emit('game_error', packet, room=client[0])
+    elif room_id:
+        socketio.emit('game_error', packet, room=room_id)
+    if room_id in rooms and rooms[room_id]['gc']:
+        socketio.sleep(SOCKET_SLEEP)
+
+
+def reset_room_to_lobby(room_id):
+    """Reset a room to LOBBY state after a crash / error."""
+    R.connection_lock.acquire()
+    try:
+        if room_id in rooms:
+            rooms[room_id]['gc'] = None
+            rooms[room_id]['status'] = 'LOBBY'
+            rooms[room_id]['reconnections'] = {}
+    finally:
+        R.connection_lock.release()
+    emit_member_list(room_id)
+
 # SOCKET RECEIVERS
 
 
 @socketio.on('connect')
 def _on_connect():
-    try:
-        print(f"DEBUG connect: sid={request.sid}")
-    except Exception:
-        print("DEBUG connect: sid=unknown")
+    game_logger.debug('connect: sid=%s', request.sid)
 
 
 @socketio.on('start')
 def on_start(json):
+    room_id = None
+    try:
+        # Guard against missing / malformed payload
+        if not isinstance(json, dict):
+            json = {}
 
-    # Get room and players in it
-    R.connection_lock.acquire()
-    room_id = get_room_id(rooms, request.sid)
-    if not room_id:
+        # Get room and players in it
+        R.connection_lock.acquire()
+        room_id = get_room_id(rooms, request.sid)
+        if not room_id:
+            R.connection_lock.release()
+            return
+
+        # Double-start guard: if a game is already running in this room,
+        # ignore any additional start requests.
+        if rooms[room_id]['status'] == 'GAME':
+            R.connection_lock.release()
+            return
+
+        people_in_room = rooms[room_id]['connections']
+        names_and_sids = [(people_in_room[x], x) for x in people_in_room.keys()]
+
+        # Check for false start
+        n_players = max(min(int(json.get('n_players', 4)), 8), 4)
+        if len(names_and_sids) > n_players:
+            R.connection_lock.release()
+            packet = {'field': n_players, 'actual': len(names_and_sids)}
+            socketio.emit('false_start', packet, room=request.sid)
+            return
+
+        # Initialize human and AI players
+        rgb = ['rgb(245,245,245)', 'rgb(100,100,100)', 'rgb(79,182,78)',
+               'rgb(62,99,171)', 'rgb(197,97,163)', 'rgb(219,62,62)',
+               'rgb(249,234,48)', 'rgb(239,136,43)']
+        human_players = [Player(n[0], n[1], rgb.pop(0), False)
+                         for n in names_and_sids]
+        ai_players = [Player("CPU_{}".format(i), str(i), rgb.pop(0), True)
+                      for i in range(1, n_players - len(human_players) + 1)]
+        players = human_players + ai_players
+
+        # Initialize game context with players and emission functions
+        ef = ElementFactory()
+        gc = GameContext(
+            players=players,
+            characters=ef.CHARACTERS,
+            black_cards=ef.BLACK_DECK,
+            white_cards=ef.WHITE_DECK,
+            hermit_cards=ef.HERMIT_DECK,
+            areas=ef.AREAS,
+            ask_h=lambda x, y, z: socket_ask(x, y, z, room_id),
+            tell_h=None,
+            show_h=None,
+            update_h=None
+        )
+        gc.tell_h = lambda x, y, *z: socket_tell(x, y, gc, room_id, z)
+        gc.show_h = lambda x, *y: socket_show(x, gc, room_id, y)
+        gc.update_h = lambda: socket_update(gc.dump()[0], room_id)
+
+        # Assign game to room
+        rooms[room_id]['gc'] = gc
+        rooms[room_id]['status'] = 'GAME'
+
         R.connection_lock.release()
-        return
 
-    people_in_room = rooms[room_id]['connections']
-    names_and_sids = [(people_in_room[x], x) for x in people_in_room.keys()]
+        # Send public and private game states to frontend
+        gc.tell_h("Loading game...", [])
+        public_state, private_state = gc.dump()
+        for priv in private_state:
+            data = {
+                'public': public_state,
+                'private': priv
+            }
+            socketio.emit('game_start', data, room=priv['socket_id'])
+        socketio.sleep(1)
+        gc.tell_h("Started a game with players {}".format(
+            ", ".join(['{}'] * len(players))), [p.user_id for p in players])
 
-    # Check for false start
-    n_players = max(min(int(json['n_players']), 8), 4)
-    if len(names_and_sids) > n_players:
-        R.connection_lock.release()
-        packet = {'field': n_players, 'actual': len(names_and_sids)}
-        socketio.emit('false_start', packet, room=request.sid)
-        return
-
-    # Initialize human and AI players
-    rgb = ['rgb(245,245,245)', 'rgb(100,100,100)', 'rgb(79,182,78)',
-           'rgb(62,99,171)', 'rgb(197,97,163)', 'rgb(219,62,62)',
-           'rgb(249,234,48)', 'rgb(239,136,43)']
-    human_players = [Player(n[0], n[1], rgb.pop(0), False)
-                     for n in names_and_sids]
-    ai_players = [Player("CPU_{}".format(i), str(i), rgb.pop(0), True)
-                  for i in range(1, n_players - len(human_players) + 1)]
-    players = human_players + ai_players
-
-    # Initialize game context with players and emission functions
-    ef = ElementFactory()
-    gc = GameContext(
-        players=players,
-        characters=ef.CHARACTERS,
-        black_cards=ef.BLACK_DECK,
-        white_cards=ef.WHITE_DECK,
-        hermit_cards=ef.HERMIT_DECK,
-        areas=ef.AREAS,
-        ask_h=lambda x, y, z: socket_ask(x, y, z, room_id),
-        tell_h=None,
-        show_h=None,
-        update_h=None
-    )
-    gc.tell_h = lambda x, y, *z: socket_tell(x, y, gc, room_id, z)
-    gc.show_h = lambda x, *y: socket_show(x, gc, room_id, y)
-    gc.update_h = lambda: socket_update(gc.dump()[0], room_id)
-
-    # Assign game to room
-    if rooms[room_id]['status'] == 'GAME':
-        R.connection_lock.release()
-        return
-    rooms[room_id]['gc'] = gc
-    rooms[room_id]['status'] = 'GAME'
-
-    R.connection_lock.release()
-
-    # Send public and private game states to frontend
-    gc.tell_h("Loading game...", [])
-    public_state, private_state = gc.dump()
-    for priv in private_state:
-        data = {
-            'public': public_state,
-            'private': priv
-        }
-        socketio.emit('game_start', data, room=priv['socket_id'])
-    socketio.sleep(1)
-    gc.tell_h("Started a game with players {}".format(
-        ", ".join(['{}'] * len(players))), [p.user_id for p in players])
-
-    # Initiate gameplay loop
-    gc.play()
+        # Initiate gameplay loop
+        gc.play()
+    except Exception as exc:  # noqa: BLE001 - keep the game alive on any crash
+        game_logger.exception('on_start failed')
+        if room_id:
+            socket_game_error(
+                "Erreur interne : la partie n'a pas pu démarrer. "
+                "Réessayez depuis le lobby.", room_id=room_id)
+            reset_room_to_lobby(room_id)
+        else:
+            socket_game_error(
+                "Erreur interne : la partie n'a pas pu démarrer.",
+                client=(request.sid,))
 
 
 @socketio.on('reveal')
@@ -428,10 +583,7 @@ def on_answer(json):
 def on_message(json):
 
     # Debug
-    try:
-        print(f"DEBUG on_message recv: sid={request.sid} payload={json}")
-    except Exception:
-        print("DEBUG on_message recv: sid=unknown")
+    game_logger.debug('on_message recv: sid=%s payload=%s', request.sid, json)
 
     room_id = None
     name = 'Unknown'
@@ -476,10 +628,10 @@ def on_join(json):
     reconnect = json.get('reconnect', False)
     spectate = json.get('spectate', False)
 
-    try:
-        print(f"DEBUG on_join: sid={request.sid} room_id={room_id} name={name} reconnect={reconnect} spectate={spectate}")
-    except Exception:
-        print("DEBUG on_join: sid=unknown")
+    game_logger.debug(
+        'on_join: sid=%s room_id=%s name=%s reconnect=%s spectate=%s',
+        request.sid, room_id, name, reconnect, spectate,
+    )
 
     # Tell everyone about the join
     msg = '{} has joined the room!'
@@ -500,13 +652,54 @@ def on_join(json):
                               'connections': {}, 'reconnections': {}}
 
         # If this is a reconnection event, change player's socket id and AI status
-        # in game context
+        # in game context, then push the *current* game state so the client
+        # resumes from the live position (not the snapshot captured when the
+        # page was first rendered).
         if reconnect:
-            del rooms[room_id]['reconnections'][name]
-            player = [p for p in rooms[room_id]
-                      ['gc'].players if p.user_id == name][0]
-            player.socket_id = request.sid
-            player.ai = False
+            rooms[room_id]['reconnections'].pop(name, None)
+            if rooms[room_id]['status'] == 'GAME' and rooms[room_id]['gc'] is not None:
+                found = [p for p in rooms[room_id]['gc'].players if p.user_id == name]
+                if found:
+                    player = found[0]
+                    player.socket_id = request.sid
+                    player.ai = False
+                    public_state, private_state = rooms[room_id]['gc'].dump()
+                    priv = [p for p in private_state if p['user_id'] == name]
+                    if priv:
+                        socketio.emit(
+                            'game_start',
+                            {'public': public_state, 'private': priv[0]},
+                            room=request.sid,
+                        )
+                        game_logger.info(
+                            'Game state restored for reconnecting player %s (sid %s)',
+                            name, request.sid,
+                        )
+                else:
+                    game_logger.warning(
+                        'Reconnect for unknown player %s in room %s', name, room_id
+                    )
+            else:
+                # Game ended / room reset: treat as a fresh spectator.
+                game_logger.info(
+                    'Player %s reconnected but no live game in room %s; spectating',
+                    name, room_id,
+                )
+
+        # Send the current game state to anyone joining while a game is in
+        # progress (spectators see public state only; reconnects were served
+        # above with their private state).
+        if (
+            rooms[room_id]['status'] == 'GAME'
+            and rooms[room_id]['gc'] is not None
+            and not reconnect
+        ):
+            public_state, private_state = rooms[room_id]['gc'].dump()
+            socketio.emit(
+                'game_start',
+                {'public': public_state, 'private': {}},
+                room=request.sid,
+            )
 
         # Add new player to room
         rooms[room_id]['connections'][request.sid] = name

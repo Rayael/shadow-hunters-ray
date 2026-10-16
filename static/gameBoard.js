@@ -11,6 +11,10 @@ var GameBoard = new Phaser.Class ({
         // this allows clicking in our game
         this.allowClick = true;
 
+        // Ask-popup state (Phase 3): modal Phaser popup replaces the HTML forms.
+        this.askLock = false;
+        this.askPopup = null;
+
         //this is where all of the objects specific to our scene will appear
         this.arsenal = [];
         this.healthBar;
@@ -246,6 +250,7 @@ var GameBoard = new Phaser.Class ({
     //the create function is where everything is added to the canvas
     create: function () {
         var self = this;
+        window.boardScene = this;
 
         //this adds our background image. the x, y coordinates provided are the center of the canvas
         var background = this.add.image(533, 300, 'background');

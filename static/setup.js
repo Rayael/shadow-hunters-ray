@@ -15,16 +15,43 @@ $(document).ready(function() {
         $('#special').remove();
     }
 
+    // --- Reusable error popup ---
+    var errorPopupVisible = false;
+    function showError(msg, onOk) {
+        if (errorPopupVisible) return; // avoid stacking popups
+        errorPopupVisible = true;
+        $('#error-popup-msg').text(msg);
+        $('#error-popup').fadeIn(150);
+        $('#error-popup-ok').off('click').on('click', function() {
+            $('#error-popup').fadeOut(150);
+            errorPopupVisible = false;
+            if (onOk) onOk();
+        });
+    }
+    function hideError() {
+        if (errorPopupVisible) {
+            $('#error-popup').fadeOut(150);
+            errorPopupVisible = false;
+            $('#error-popup-ok').off('click');
+        }
+    }
+
     // Initial connection
     // Use same-origin/protocol so HTTPS sites don't attempt to connect over http:// (mixed content).
     // Socket.IO will automatically choose ws/wss based on the current page.
     socket = io(window.location.origin, {
-        reconnection: false,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
         'sync disconnect on unload': true
     });
 
     socket.on('connect_error', function(err) {
         console.error('Socket connect_error', err);
+        showError("Impossible de se connecter au serveur. Vérifiez votre connexion et réessayez.", function() {
+            window.location = "/";
+        });
     });
     socket.on('connect', function() {
         console.log('Socket connected, id=', socket.id);
@@ -173,15 +200,43 @@ $(document).ready(function() {
 
         // False start handler
         socket.on('false_start', function(data) {
-            alert("You cannot start a "+data.field+"-player game when there are "+data.actual+" people in the room.");
+            showError("Impossible de démarrer : vous avez demandé une partie à "+data.field+" joueurs alors qu'il y a "+data.actual+" personnes dans la salle.");
+        });
+
+        // Game error emitted by the server when the game loop crashes
+        socket.on('game_error', function(data) {
+            showError(data.error || "Une erreur est survenue pendant la partie.");
         });
 
         // Disconnect handler
         socket.on('disconnect', function(reason) {
             window.onbeforeunload = function() {};
-            alert("You have lost connection to the server –\u00a0click 'Ok' to return to the home page, " +
-                  "where you may reconnect if you were in a game.");
-            window.location = "/";
+            showError("Connexion perdue avec le serveur. Cliquez sur 'Ok' pour revenir à la page d'accueil et vous reconnecter si vous étiez en partie.", function() {
+                window.location = "/";
+            });
+        });
+
+        // Reconnection handlers
+        var reconnecting = false;
+        socket.on('reconnect_attempt', function(attemptNumber) {
+            if (!reconnecting) {
+                reconnecting = true;
+                showError("Reconnexion au serveur en cours... (tentative " + attemptNumber + ")", null);
+            }
+        });
+        socket.on('reconnect', function(attemptNumber) {
+            reconnecting = false;
+            hideError();
+            // Re-join the room so the server restores the player's socket_id
+            usrctx.reconnect = true;
+            socket.emit('join', usrctx);
+        });
+        socket.on('reconnect_failed', function() {
+            reconnecting = false;
+            hideError();
+            showError("Impossible de se reconnecter au serveur. Cliquez sur 'Ok' pour revenir à la page d'accueil.", function() {
+                window.location = "/";
+            });
         });
 
         // Close window handler
