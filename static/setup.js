@@ -9,6 +9,9 @@ $(document).ready(function() {
     $('#select').hide();
     $('#reveal').hide();
     $('#special').hide();
+    // Only the host may see game settings (player count) and the Start button.
+    $('#selectPlayers').hide();
+    $('#start').hide();
     if(usrctx.spectate) {
         $('#start').remove();
         $('#reveal').remove();
@@ -58,6 +61,17 @@ $(document).ready(function() {
 
         // User joins the room
         socket.emit('join', usrctx );
+
+        // Receive host status from the server (only the host sees settings).
+        socket.on('host_status', function(data) {
+            if (data && data.is_host) {
+                $('#selectPlayers').show();
+                $('#start').show();
+            } else {
+                $('#selectPlayers').hide();
+                $('#start').hide();
+            }
+        });
 
         // Receive updated member list from the server
         socket.on('members', function(data) {

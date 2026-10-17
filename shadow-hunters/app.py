@@ -391,6 +391,7 @@ def reset_room_to_lobby(room_id):
             rooms[room_id]['gc'] = None
             rooms[room_id]['status'] = 'LOBBY'
             rooms[room_id]['reconnections'] = {}
+            rooms[room_id].pop('host_sid', None)
     finally:
         R.connection_lock.release()
     emit_member_list(room_id)
@@ -422,6 +423,14 @@ def on_start(json):
         # ignore any additional start requests.
         if rooms[room_id]['status'] == 'GAME':
             R.connection_lock.release()
+            return
+
+        # Host-only guard: only the host may start the game.
+        host_sid = rooms[room_id].get('host_sid')
+        if host_sid and request.sid != host_sid:
+            R.connection_lock.release()
+            socket_game_error(
+                "Seul l'hôte peut démarrer la partie.", client=(request.sid,))
             return
 
         people_in_room = rooms[room_id]['connections']
@@ -585,6 +594,11 @@ def on_message(json):
     # Debug
     game_logger.debug('on_message recv: sid=%s payload=%s', request.sid, json)
 
+    # Guard against non-dict payloads
+    if not isinstance(json, dict):
+        game_logger.warning('on_message: non-dict payload from sid=%s', request.sid)
+        return
+
     room_id = None
     name = 'Unknown'
     color = C.TEXT_COLORS['server']
@@ -608,11 +622,11 @@ def on_message(json):
     finally:
         R.connection_lock.release()
 
-    # Broadcast non-empty message
+    # Broadcast non-empty message (HTML-escaped to prevent XSS)
     user_input = json.get('data', '')
     if user_input and str(user_input).strip():
         packet = {
-            'data': str(user_input),
+            'data': html.escape(str(user_input)),
             'name': name,
             'color': color,
         }
@@ -706,6 +720,15 @@ def on_join(json):
         join_room(room_id)
     finally:
         R.connection_lock.release()
+
+    # Determine host status: the first player to join the room is the host.
+    # The host is the only player allowed to change game settings and start.
+    is_host = len(rooms[room_id]['connections']) == 1
+    if is_host:
+        rooms[room_id]['host_sid'] = request.sid
+
+    # Emit host status to this player so the client can show/hide settings.
+    socketio.emit('host_status', {'is_host': is_host}, room=request.sid)
 
     # Emit welcome message to new player
     msg = 'Welcome to Shadow Hunters Room: ' + room_id
