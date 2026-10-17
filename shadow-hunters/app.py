@@ -429,9 +429,15 @@ def on_start(json):
         host_sid = rooms[room_id].get('host_sid')
         if host_sid and request.sid != host_sid:
             R.connection_lock.release()
+            game_logger.warning(
+                'on_start: sid=%s is not host (host=%s), rejecting', request.sid, host_sid)
             socket_game_error(
                 "Seul l'hôte peut démarrer la partie.", client=(request.sid,))
             return
+
+        game_logger.info(
+            'on_start: sid=%s room=%s starting game with %s players',
+            request.sid, room_id, len(names_and_sids))
 
         people_in_room = rooms[room_id]['connections']
         names_and_sids = [(people_in_room[x], x) for x in people_in_room.keys()]
@@ -630,6 +636,8 @@ def on_message(json):
             'name': name,
             'color': color,
         }
+        game_logger.debug('on_message emit: sid=%s room=%s name=%s data=%s',
+                          request.sid, room_id, name, user_input[:50])
         socketio.emit('message', packet, room=room_id)
 
 
@@ -734,6 +742,9 @@ def on_join(json):
 
     # Emit host status to this player so the client can show/hide settings.
     socketio.emit('host_status', {'is_host': is_host}, room=request.sid)
+    game_logger.info(
+        'on_join: sid=%s room=%s name=%s host=%s spectate=%s reconnect=%s',
+        request.sid, room_id, name, is_host, spectate, reconnect)
 
     # Emit welcome message to new player
     msg = 'Welcome to Shadow Hunters Room: ' + room_id
@@ -764,8 +775,9 @@ def on_disconnect():
         return
 
     # Remove user from the room, gracefully handling duplicate disconnects.
-    # The player name is read *inside* the lock to avoid KeyError on duplicate
-    # disconnects (the sid may already have been popped by a previous call).
+    # All shared-state reads/writes happen inside the lock. Socket emissions
+    # (socket_tell, emit_member_list) happen OUTSIDE the lock to avoid holding
+    # connection_lock during socketio.sleep() calls.
     R.connection_lock.acquire()
     try:
         name = rooms[room_id]['connections'].get(request.sid, 'Unknown')
@@ -775,11 +787,10 @@ def on_disconnect():
         if request.sid in rooms[room_id]['connections']:
             rooms[room_id]['connections'].pop(request.sid)
 
-        # Notify everyone about the departure
-        socket_tell('{} has left the room', [name], gc, room_id)
+        room_was_empty = not rooms[room_id]['connections'].keys()
+        ai_swap = False
 
-        # Close room if it is now empty, or replace player with AI if it's in game
-        if not rooms[room_id]['connections'].keys():
+        if room_was_empty:
 
             # Close the room
             if gc and [p for p in gc.players if p.socket_id == request.sid]:
@@ -794,33 +805,44 @@ def on_disconnect():
 
         elif gc and not gc.game_over:
 
-            # If disconnected person was spectating, or dead, or if the game is
-            # over, don't swap them for an AI
+            # If disconnected person was spectating, or dead, don't swap for AI
             player_in_game = [p for p in gc.players if p.socket_id == request.sid]
             if not player_in_game or player_in_game[0].state == C.PlayerState.Dead:
                 # Player not in game or dead: just update member list
                 if was_host:
                     rooms[room_id].pop('host_sid', None)
-                emit_member_list(room_id)
-                return
+                ai_swap = False
 
-            # Swap player for AI
-            player_in_game[0].ai = True
-            rooms[room_id]['reconnections'][player_in_game[0].user_id] = 'cookie'
-            if was_host:
-                rooms[room_id].pop('host_sid', None)
-            emit_member_list(room_id)
-            socket_tell('A computer player has taken their place!',
-                        [], gc, room_id)
+            else:
+
+                # Swap player for AI
+                player_in_game[0].ai = True
+                rooms[room_id]['reconnections'][player_in_game[0].user_id] = 'cookie'
+                if was_host:
+                    rooms[room_id].pop('host_sid', None)
+                ai_swap = True
 
         else:
 
             # Spectator or game over: update member list
             if was_host:
                 rooms[room_id].pop('host_sid', None)
-            emit_member_list(room_id)
+            ai_swap = False
     finally:
         R.connection_lock.release()
+
+    # --- Emissions OUTSIDE the lock ---
+    game_logger.debug(
+        'on_disconnect: sid=%s room_id=%s name=%s was_host=%s room_empty=%s',
+        request.sid, room_id, name, was_host, room_was_empty)
+
+    socket_tell('{} has left the room', [name], gc, room_id)
+
+    if not room_was_empty:
+        emit_member_list(room_id)
+        if ai_swap:
+            socket_tell('A computer player has taken their place!',
+                        [], gc, room_id)
 
 
 if __name__ == '__main__':

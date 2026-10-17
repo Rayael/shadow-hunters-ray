@@ -56,35 +56,153 @@ $(document).ready(function() {
             window.location = "/";
         });
     });
+
+    // --- Register ALL Socket.IO listeners BEFORE emitting anything ---
+    // This guarantees we don't miss server responses that arrive quickly.
+
+    // Receive host status from the server (only the host sees settings).
+    socket.on('host_status', function(data) {
+        console.debug('Received host_status', data);
+        if (data && data.is_host) {
+            $('#selectPlayers').show();
+            $('#start').show();
+        } else {
+            $('#selectPlayers').hide();
+            $('#start').hide();
+        }
+    });
+
+    // Receive updated member list from the server
+    socket.on('members', function(data) {
+        console.debug('Received members', data);
+        var list = $('#members-list');
+        if (!list.length) return;
+        list.empty();
+        (data.members || []).forEach(function(name) {
+            list.append('<li>' + name + '</li>');
+        });
+    });
+
+    // Receive a message (chat or system)
+    socket.on('message', function(msg) {
+        console.debug('Received message', msg);
+
+        // Build message
+        var html = '';
+        if(typeof msg.name !== 'undefined') {
+            html = '<p style="margin:0"><b style="color:'+msg.color+'">'+msg.name+'</b> '+msg.data+'</p>';
+        }
+        else {
+            html = '<p style="margin:0">';
+            for(var i = 0; i < msg.strings.length; i++) {
+                html += '<b style="color:'+msg.colors[i]+'">'+msg.strings[i]+'</b>';
+            }
+            html += '</p>';
+        }
+
+        // Put message in chatbox and snap to bottom if already at bottom
+        var chat = $("#message_holder");
+        var atBottom = (chat.scrollTop() == chat[0].scrollHeight - chat[0].clientHeight);
+        chat.append(html);
+        if (atBottom) {
+            chat.scrollTop(chat[0].scrollHeight);
+        }
+    });
+
+    // Receive an ask
+    socket.on('ask', function(data) {
+
+        console.debug('Received ask', data);
+
+        // Add buttons for each option
+        var option = '';
+        if(data.form === 'select')
+        {
+            option += '<div id="popup"><br>';
+            for (var i = 0; i < data.options.length; i++)
+            {
+                option += '<button name="inputs" type="submit" class="selectButton" value="' +
+                data.options[i] + '">' + data.options[i] + '</button>';
+            }
+            option += '<br></div>';
+        }
+        else
+        {
+            for (var i = 0; i < data.options.length; i++)
+            {
+                option += '<button name="inputs" type="submit" class="button' +
+                           String(i+1) + '" value="' + data.options[i] + '">' +
+                           data.options[i] + '</button><br>';
+            }
+        }
+        $('#'+data.form).append(option);
+
+        // Add click handler to each button
+        $('form [name="inputs"]').click(function() {
+            $('[name="inputs"]', $(this).parents("form")).removeAttr("clicked");
+            $(this).attr("clicked", "true");
+        });
+
+        // Show buttons
+        $('#'+data.form).show();
+    });
+
+    // False start handler
+    socket.on('false_start', function(data) {
+        showError("Impossible de démarrer : vous avez demandé une partie à "+data.field+" joueurs alors qu'il y a "+data.actual+" personnes dans la salle.");
+    });
+
+    // Game error emitted by the server when the game loop crashes
+    socket.on('game_error', function(data) {
+        showError(data.error || "Une erreur est survenue pendant la partie.");
+    });
+
+    // Disconnect handler
+    socket.on('disconnect', function(reason) {
+        window.onbeforeunload = function() {};
+        showError("Connexion perdue avec le serveur. Cliquez sur 'Ok' pour revenir à la page d'accueil et vous reconnecter si vous étiez en partie.", function() {
+            window.location = "/";
+        });
+    });
+
+    // Reconnection handlers
+    var reconnecting = false;
+    socket.on('reconnect_attempt', function(attemptNumber) {
+        if (!reconnecting) {
+            reconnecting = true;
+            showError("Reconnexion au serveur en cours... (tentative " + attemptNumber + ")", null);
+        }
+    });
+    socket.on('reconnect', function(attemptNumber) {
+        reconnecting = false;
+        hideError();
+        // Re-join the room so the server restores the player's socket_id
+        usrctx.reconnect = true;
+        socket.emit('join', usrctx);
+    });
+    socket.on('reconnect_failed', function() {
+        reconnecting = false;
+        hideError();
+        showError("Impossible de se reconnecter au serveur. Cliquez sur 'Ok' pour revenir à la page d'accueil.", function() {
+            window.location = "/";
+        });
+    });
+
+    // Close window handler
+    window.onbeforeunload = function() {
+        socket.close();
+    }
+
+    // --- Now that all listeners are registered, join the room ---
     socket.on('connect', function() {
         console.log('Socket connected, id=', socket.id);
 
         // User joins the room
         socket.emit('join', usrctx );
+    });
 
-        // Receive host status from the server (only the host sees settings).
-        socket.on('host_status', function(data) {
-            if (data && data.is_host) {
-                $('#selectPlayers').show();
-                $('#start').show();
-            } else {
-                $('#selectPlayers').hide();
-                $('#start').hide();
-            }
-        });
-
-        // Receive updated member list from the server
-        socket.on('members', function(data) {
-            var list = $('#members-list');
-            if (!list.length) return;
-            list.empty();
-            (data.members || []).forEach(function(name) {
-                list.append('<li>' + name + '</li>');
-            });
-        });
-
-        // Setup send message helper
-        function sendMessage() {
+    // Setup send message helper
+    function sendMessage() {
             var user_input = $('#message').val();
             if (!user_input || !user_input.trim()) return;
             console.debug('Emitting message', user_input);
