@@ -811,4 +811,7 @@ if __name__ == '__main__':
     # In production, use the PORT provided by the platform (Railway)
     port = int(os.getenv('PORT', 5000))
     # Disable debug in production
-    socketio.run(app, debug=False, host="0.0.0.0", port=port)
+    # allow_unsafe_werkzeug is required to run WerkSocketIO under production
+    # WSGI servers such as Railway's gunicorn wrapper.
+    socketio.run(app, debug=False, host="0.0.0.0", port=port,
+                 allow_unsafe_werkzeug=True)
