@@ -23,9 +23,8 @@ class ElementFactory:
         # Initialize white cards
         white_cards = [
             card.Card(
-                title="Mystic Compass",
-                desc=("When you move, you may roll twice "
-                      "and choose which result to use."),
+                title="Boussole Mystique",
+                desc="Lorsque vous vous déplacez, vous pouvez lancer deux fois et choisir le résultat à utiliser.",
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
@@ -33,104 +32,87 @@ class ElementFactory:
             ),
             card.Card(
                 title="Talisman",
-                desc=("You receive no damage from Black cards"
-                      " 'Bloodthirsty Spider', 'Vampire Bat', or 'Dynamite'."),
+                desc="Vous ne recevez aucun dégât des cartes Noires 'Araignée Assoiffée de Sang', 'Chauve-souris Vampirique' ou 'Dynamite'.",
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
                 use=None
             ),
             card.Card(
-                title="Fortune Brooch",
-                desc=(
-                    "You receive no damage from the area card"
-                    " 'Weird Woods'. You can still be healed by it."),
+                title="Broche de la Fortune",
+                desc="Vous ne recevez aucun dégât de la carte de zone 'Bois Étrangers'. Vous pouvez toujours y être soigné.",
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
                 use=None
             ),
             card.Card(
-                title="Silver Rosary",
-                desc=("If you kill another character, "
-                      "you take all of their equipment cards."),
+                title="Rosen d'Argent",
+                desc="Si vous tuez un autre personnage, vous prenez toutes ses cartes d'équipement.",
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
                 use=None
             ),
             card.Card(
-                title="Spear of Longinus",
-                desc=("If you are a Hunter who has revealed their identity and"
-                      " your attack is successful, you give 2 points of extra"
-                      " damage."),
+                title="Lance de Longin",
+                desc="Si vous êtes un Chasseur ayant révélé votre identité et que votre attaque réussit, vous infligez 2 points de dégâts supplémentaires.",
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
                 use=None
             ),
             card.Card(
-                title="Advent",
-                desc=("If you are a Hunter, you may reveal your identity. "
-                      "If you do, or if you are already revealed,"
-                      " you heal fully."),
+                title="Avènement",
+                desc="Si vous êtes un Chasseur, vous pouvez révéler votre identité. Si vous le faites, ou si vous êtes déjà révélé, vous vous soignez entièrement.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.advent
             ),
             card.Card(
-                title="Disenchant Mirror",
-                desc=("If you are a Shadow, except for Unknown, "
-                      "you must reveal your identity."),
+                title="Miroir de Désenvoûtement",
+                desc="Si vous êtes une Ombre, sauf Inconnu, vous devez révéler votre identité.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.disenchant_mirror
             ),
             card.Card(
-                title="Blessing",
-                desc=("Pick a character other than yourself and roll the"
-                      " 6-sided die. That character heals an amount of damage"
-                      " equal to the die roll."),
+                title="Bénédiction",
+                desc="Choisissez un personnage autre que vous-même et lancez le dé à 6 faces. Ce personnage se soigne d'un montant de dégâts égal au résultat du dé.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.blessing
             ),
             card.Card(
-                title="Chocolate",
-                desc=("If you are Allie, Agnes, Emi, Ellen, Unknown,"
-                      " or Ultra Soul, you may reveal your identity. "
-                      "If you do, or if you are already revealed, "
-                      "you heal fully."),
+                title="Chocolat",
+                desc="Si vous êtes Allie, Agnes, Emi, Ellen, Inconnu ou Ultra Soul, vous pouvez révéler votre identité. Si vous le faites, ou si vous êtes déjà révélé, vous vous soignez entièrement.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.chocolate
             ),
             card.Card(
-                title="Concealed Knowledge",
-                desc="When this turn is over, it will be your turn again.",
+                title="Connaissance Cachée",
+                desc="À la fin de ce tour, ce sera de nouveau votre tour.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.concealed_knowledge
             ),
             card.Card(
-                title="Guardian Angel",
-                desc=("You take no damage from the direct attacks of "
-                      "other characters until the start of your next turn."),
+                title="Ange Gardien",
+                desc="Vous ne subissez aucun dégât des attaques directes des autres personnages jusqu'au début de votre prochain tour.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.guardian_angel
             ),
             card.Card(
-                title="Holy Robe",
-                desc=("Your attacks do 1 less damage and the amount of"
-                      " damage you receive from attacks is reduced by"
-                      " 1 point."),
+                title="Robe Sainte",
+                desc="Vos attaques infligent 1 dégât de moins et les dégâts que vous recevez des attaques sont réduits de 1 point.",
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
@@ -138,34 +120,32 @@ class ElementFactory:
                     0, amt - 1)  # applies to both attack and defend
             ),
             card.Card(
-                title="Flare of Judgement",
-                desc=("All characters except yourself"
-                      " receive 2 points of damage."),
+                title="Brasier du Jugement",
+                desc="Tous les personnages sauf vous reçoivent 2 points de dégâts.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.judgement
             ),
             card.Card(
-                title="First Aid",
-                desc=("Place a character's damage marker to 7"
-                      " (You can choose yourself)."),
+                title="Premiers Secours",
+                desc="Placez le marqueur de dégâts d'un personnage à 7 (vous pouvez vous choisir vous-même).",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.first_aid
             ),
             card.Card(
-                title="Holy Water of Healing",
-                desc="Heal 2 points of your damage.",
+                title="Eau Sainte de Guérison",
+                desc="Soignez 2 points de vos dégâts.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
                 use=single_use.holy_water
             ),
             card.Card(
-                title="Holy Water of Healing",
-                desc="Heal 2 points of your damage.",
+                title="Eau Sainte de Guérison",
+                desc="Soignez 2 points de vos dégâts.",
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
@@ -176,37 +156,32 @@ class ElementFactory:
         # Initialize black cards
         black_cards = [
             card.Card(
-                title="Cursed Sword Masamune",
-                desc=(
-                    "You must attack another character on your turn."
-                    " This attack uses the 4-sided die."),
+                title="Épée Maudite Masamune",
+                desc="Vous devez attaquer un autre personnage à votre tour. Cette attaque utilise le dé à 4 faces.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=True,
                 use=None
             ),
             card.Card(
-                title="Machine Gun",
-                desc=(
-                    "Your attack will affect all characters in your"
-                    " attack range (the dice are rolled only once)."),
+                title="Mitraillette",
+                desc="Votre attaque touche tous les personnages à votre portée d'attaque (les dés ne sont lancés qu'une seule fois).",
                 color=CardType.Black,
                 holder=None,
                 is_equip=True,
                 use=None
             ),
             card.Card(
-                title="Handgun",
-                desc="All ranges but yours become your attack range.",
+                title="Pistolet",
+                desc="Toutes les portées sauf la vôtre deviennent votre portée d'attaque.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=True,
                 use=None
             ),
             card.Card(
-                title="Butcher Knife",
-                desc=("If your attack is successful, "
-                      "you give 1 point of extra damage."),
+                title="Couteau de Boucher",
+                desc="Si votre attaque réussit, vous infligez 1 point de dégât supplémentaire.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=True,
@@ -214,9 +189,8 @@ class ElementFactory:
                 1 if (is_attack and successful) else amt
             ),
             card.Card(
-                title="Chainsaw",
-                desc=("If your attack is successful, "
-                      "you give 1 point of extra damage."),
+                title="Tronçonneuse",
+                desc="Si votre attaque réussit, vous infligez 1 point de dégât supplémentaire.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=True,
@@ -224,9 +198,8 @@ class ElementFactory:
                 1 if (is_attack and successful) else amt
             ),
             card.Card(
-                title="Rusted Broad Axe",
-                desc=("If your attack is successful, "
-                      "you give 1 point of extra damage."),
+                title="Hache Large Oxydée",
+                desc="Si votre attaque réussit, vous infligez 1 point de dégât supplémentaire.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=True,
@@ -234,71 +207,64 @@ class ElementFactory:
                 1 if (is_attack and successful) else amt
             ),
             card.Card(
-                title="Moody Goblin",
-                desc="You steal an equipment card from any character.",
+                title="Gobelin Capricieux",
+                desc="Vous volez une carte d'équipement à n'importe quel personnage.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.moody_goblin
             ),
             card.Card(
-                title="Moody Goblin",
-                desc="You steal an equipment card from any character.",
+                title="Gobelin Capricieux",
+                desc="Vous volez une carte d'équipement à n'importe quel personnage.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.moody_goblin
             ),
             card.Card(
-                title="Bloodthirsty Spider",
-                desc=("You give 2 points of damage to any character"
-                      " and receive 2 points of damage yourself."),
+                title="Araignée Assoiffée de Sang",
+                desc="Vous infligez 2 points de dégâts à n'importe quel personnage et vous en recevez 2 vous-même.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.bloodthirsty_spider
             ),
             card.Card(
-                title="Vampire Bat",
-                desc=("You give 2 points of damage to any character"
-                      " and heal 1 point of your own damage."),
+                title="Chauve-souris Vampirique",
+                desc="Vous infligez 2 points de dégâts à n'importe quel personnage et vous soignez 1 point de vos propres dégâts.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.vampire_bat
             ),
             card.Card(
-                title="Vampire Bat",
-                desc=("You give 2 points of damage to any character"
-                      " and heal 1 point of your own damage."),
+                title="Chauve-souris Vampirique",
+                desc="Vous infligez 2 points de dégâts à n'importe quel personnage et vous soignez 1 point de vos propres dégâts.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.vampire_bat
             ),
             card.Card(
-                title="Vampire Bat",
-                desc=("You give 2 points of damage to any character"
-                      " and heal 1 point of your own damage."),
+                title="Chauve-souris Vampirique",
+                desc="Vous infligez 2 points de dégâts à n'importe quel personnage et vous soignez 1 point de vos propres dégâts.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.vampire_bat
             ),
             card.Card(
-                title="Diabolic Ritual",
-                desc=("If you are a Shadow, you may reveal your identity."
-                      " If you do, you fully heal you damage."),
+                title="Rituel Diabolique",
+                desc="Si vous êtes une Ombre, vous pouvez révéler votre identité. Si vous le faites, vous vous soignez entièrement.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.diabolic_ritual
             ),
             card.Card(
-                title="Banana Peel",
-                desc=("Give one of your equipment cards to another character. "
-                      "If you have no equipment cards,"
-                      " you receive 1 point of damage."),
+                title="Épluchure de Banane",
+                desc="Donnez l'une de vos cartes d'équipement à un autre personnage. Si vous n'avez pas de cartes d'équipement, vous recevez 1 point de dégât.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
@@ -306,22 +272,15 @@ class ElementFactory:
             ),
             card.Card(
                 title="Dynamite",
-                desc=("Roll 2 dice and give 3 points of damage to all"
-                      " characters in the area designated "
-                      "by the total number rolled "
-                      "(nothing happens if a 7 is rolled)."),
+                desc="Lancez 2 dés et infligez 3 points de dégâts à tous les personnages dans la zone désignée par le total obtenu (rien ne se passe si un 7 est obtenu).",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
                 use=single_use.dynamite
             ),
             card.Card(
-                title="Spiritual Doll",
-                desc=("Pick a character and roll the 6-sided die. "
-                      "If the die number is 1 to 4, "
-                      "you give 3 points of damage to that character. "
-                      "If the die number is 5 or 6, "
-                      "you get 3 points of damage."),
+                title="Poupée Spirituelle",
+                desc="Choisissez un personnage et lancez le dé à 6 faces. Si le résultat est de 1 à 4, vous infligez 3 points de dégâts à ce personnage. Si le résultat est 5 ou 6, vous recevez 3 points de dégâts.",
                 color=CardType.Black,
                 holder=None,
                 is_equip=False,
@@ -332,149 +291,128 @@ class ElementFactory:
         # Initialize hermit cards
         hermit_cards = [
             card.Card(
-                title="Hermit\'s Blackmail",
-                desc=("I bet you're either a Neutral or a Hunter. "
-                      "If so, you must either give an Equipment card"
-                      " to the current player or receive 1 damage!"),
+                title="Chantage de l'Ermite",
+                desc="Je parie que vous êtes soit un Neutre, soit un Chasseur. Dans ce cas, vous devez soit donner une carte d'équipement au joueur courant, soit recevoir 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.blackmail
             ),
             card.Card(
-                title="Hermit\'s Blackmail",
-                desc=("I bet you're either a Neutral or a Hunter. "
-                      "If so, you must either give an Equipment card"
-                      " to the current player or receive 1 damage!"),
+                title="Chantage de l'Ermite",
+                desc="Je parie que vous êtes soit un Neutre, soit un Chasseur. Dans ce cas, vous devez soit donner une carte d'équipement au joueur courant, soit recevoir 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.blackmail
             ),
             card.Card(
-                title="Hermit\'s Greed",
-                desc=("I bet you're either a Neutral or a Shadow. "
-                      "If so, you must either give an Equipment card"
-                      " to the current player or receive 1 damage!"),
+                title="Cupidité de l'Ermite",
+                desc="Je parie que vous êtes soit un Neutre, soit une Ombre. Dans ce cas, vous devez soit donner une carte d'équipement au joueur courant, soit recevoir 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.greed
             ),
             card.Card(
-                title="Hermit\'s Greed",
-                desc=("I bet you're either a Neutral or a Shadow. "
-                      "If so, you must either give an Equipment card"
-                      " to the current player or receive 1 damage!"),
+                title="Cupidité de l'Ermite",
+                desc="Je parie que vous êtes soit un Neutre, soit une Ombre. Dans ce cas, vous devez soit donner une carte d'équipement au joueur courant, soit recevoir 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.greed
             ),
             card.Card(
-                title="Hermit\'s Anger",
-                desc=("I bet you're either a Hunter or a Shadow. "
-                      "If so, you must either give an Equipment card"
-                      " to the current player or receive 1 damage!"),
+                title="Colère de l'Ermite",
+                desc="Je parie que vous êtes soit un Chasseur, soit une Ombre. Dans ce cas, vous devez soit donner une carte d'équipement au joueur courant, soit recevoir 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.anger
             ),
             card.Card(
-                title="Hermit\'s Anger",
-                desc=("I bet you're either a Hunter or a Shadow. "
-                      "If so, you must either give an Equipment card"
-                      " to the current player or receive 1 damage!"),
+                title="Colère de l'Ermite",
+                desc="Je parie que vous êtes soit un Chasseur, soit une Ombre. Dans ce cas, vous devez soit donner une carte d'équipement au joueur courant, soit recevoir 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.anger
             ),
             card.Card(
-                title="Hermit\'s Slap",
-                desc="I bet you're a Hunter. If so, you receive 1 damage!",
+                title="Gifle de l'Ermite",
+                desc="Je parie que vous êtes un Chasseur. Si oui, vous recevez 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.slap
             ),
             card.Card(
-                title="Hermit\'s Slap",
-                desc="I bet you're a Hunter. If so, you receive 1 damage!",
+                title="Gifle de l'Ermite",
+                desc="Je parie que vous êtes un Chasseur. Si oui, vous recevez 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.slap
             ),
             card.Card(
-                title="Hermit\'s Spell",
-                desc="I bet you're a Shadow. If so, you receive 1 damage!",
+                title="Sort de l'Ermite",
+                desc="Je parie que vous êtes une Ombre. Si oui, vous recevez 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.spell
             ),
             card.Card(
-                title="Hermit\'s Exorcism",
-                desc="I bet you're a Shadow. If so, you receive 2 damage!",
+                title="Exorcisme de l'Ermite",
+                desc="Je parie que vous êtes une Ombre. Si oui, vous recevez 2 dégâts !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.exorcism
             ),
             card.Card(
-                title="Hermit\'s Nurturance",
-                desc=("I bet you're a Neutral. If so, you heal 1 damage! "
-                      "(However, if you have no damage, "
-                      "then you receive 1 damage!)"),
+                title="Sollicitude de l'Ermite",
+                desc="Je parie que vous êtes un Neutre. Si oui, vous soignez 1 dégât ! (Cependant, si vous n'avez aucun dégât, vous en recevez 1 !)",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.nurturance
             ),
             card.Card(
-                title="Hermit\'s Aid",
-                desc=("I bet you're a Hunter. If so, you heal 1 damage! "
-                      "(However, if you have no damage, "
-                      "then you receive 1 damage!)"),
+                title="Aide de l'Ermite",
+                desc="Je parie que vous êtes un Chasseur. Si oui, vous soignez 1 dégât ! (Cependant, si vous n'avez aucun dégât, vous en recevez 1 !)",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.aid
             ),
             card.Card(
-                title="Hermit\'s Huddle",
-                desc=("I bet you're a Shadow. If so, you heal 1 damage! "
-                      "(However, if you have no damage, "
-                      "then you receive 1 damage!)"),
+                title="Rassemblement de l'Ermite",
+                desc="Je parie que vous êtes une Ombre. Si oui, vous soignez 1 dégât ! (Cependant, si vous n'avez aucun dégât, vous en recevez 1 !)",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.huddle
             ),
             card.Card(
-                title="Hermit\'s Lesson",
-                desc=("I bet your maximum HP is 12 or more. "
-                      "If so, you receive 2 damage!"),
+                title="Leçon de l'Ermite",
+                desc="Je parie que vos PV maximum sont de 12 ou plus. Si oui, vous recevez 2 dégâts !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.lesson
             ),
             card.Card(
-                title="Hermit\'s Bully",
-                desc=("I bet your maximum HP is 11 or less. "
-                      "If so, you receive 1 damage!"),
+                title="Brute de l'Ermite",
+                desc="Je parie que vos PV maximum sont de 11 ou moins. Si oui, vous recevez 1 dégât !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
                 use=hermit.bully
             ),
             card.Card(
-                title="Hermit\'s Prediction",
-                desc=("You must reveal your character information "
-                      "secretly to the current player!"),
+                title="Prédiction de l'Ermite",
+                desc="Vous devez révéler secrètement les informations de votre personnage au joueur courant !",
                 color=CardType.Hermit,
                 holder=None,
                 is_equip=False,
@@ -495,10 +433,9 @@ class ElementFactory:
                 alleg=Alleg.Shadow,
                 max_damage=13,
                 win_cond=win_conditions.shadow,
-                win_cond_desc="All of the Hunters (or 3 Neutrals) are dead.",
+                win_cond_desc="Tous les Chasseurs (ou 3 Neutres) sont morts.",
                 special=specials.valkyrie,
-                special_desc=("When you attack, you only roll the 4-sided die"
-                              " and inflict the amount of damage rolled."),
+                special_desc="Quand vous attaquez, vous ne lancez que le dé à 4 faces et infligez le montant des dégâts obtenus.",
                 resource_id="valkyrie"
             ),
             character.Character(
@@ -506,21 +443,19 @@ class ElementFactory:
                 alleg=Alleg.Shadow,
                 max_damage=13,
                 win_cond=win_conditions.shadow,
-                win_cond_desc="All of the Hunters (or 3 Neutrals) are dead.",
+                win_cond_desc="Tous les Chasseurs (ou 3 Neutres) sont morts.",
                 special=specials.vampire,
-                special_desc=("If you attack a player and inflict damage, "
-                              "you heal 2 points of your own damage."),
+                special_desc="Si vous attaquez un joueur et infligez des dégâts, vous soignez 2 points de vos propres dégâts.",
                 resource_id="vampire"
             ),
             character.Character(
-                name="Werewolf",
+                name="Loup-Garou",
                 alleg=Alleg.Shadow,
                 max_damage=14,
                 win_cond=win_conditions.shadow,
-                win_cond_desc="All of the Hunters (or 3 Neutrals) are dead.",
+                win_cond_desc="Tous les Chasseurs (ou 3 Neutres) sont morts.",
                 special=specials.werewolf,
-                special_desc=("After you are attacked, "
-                              "you can counterattack immediately."),
+                special_desc="Après avoir été attaqué, vous pouvez contre-attaquer immédiatement.",
                 resource_id="werewolf"
             ),
             character.Character(
@@ -528,11 +463,9 @@ class ElementFactory:
                 alleg=Alleg.Shadow,
                 max_damage=11,
                 win_cond=win_conditions.shadow,
-                win_cond_desc="All of the Hunters (or 3 Neutrals) are dead.",
+                win_cond_desc="Tous les Chasseurs (ou 3 Neutres) sont morts.",
                 special=specials.ultra_soul,
-                special_desc=("When your turn starts, you can give 3 damage"
-                              " to one player who is at"
-                              " the Underworld Gate."),
+                special_desc="Quand votre tour commence, vous pouvez infliger 3 dégâts à un joueur qui se trouve à la Porte des Enfers.",
                 resource_id="ultra-soul"
             ),
             character.Character(
@@ -540,9 +473,9 @@ class ElementFactory:
                 alleg=Alleg.Neutral,
                 max_damage=8,
                 win_cond=win_conditions.allie,
-                win_cond_desc="You're not dead when the game is over.",
+                win_cond_desc="Vous n'êtes pas mort quand la partie se termine.",
                 special=specials.allie,
-                special_desc="Once per game, you may fully heal your damage.",
+                special_desc="Une fois par partie, vous pouvez entièrement soigner vos dégâts.",
                 resource_id="allie"
             ),
             character.Character(
@@ -550,11 +483,9 @@ class ElementFactory:
                 alleg=Alleg.Neutral,
                 max_damage=10,
                 win_cond=win_conditions.bob,
-                win_cond_desc="You have 5 or more equipment cards.",
+                win_cond_desc="Vous avez 5 cartes d'équipement ou plus.",
                 special=specials.bob,
-                special_desc=("If your attack inflicts 2 or more damage, "
-                              "you may steal an Equipment card from your"
-                              " target instead of giving damage."),
+                special_desc="Si votre attaque inflige 2 dégâts ou plus, vous pouvez voler une carte d'équipement à votre cible au lieu d'infliger des dégâts.",
                 resource_id="bob1",
                 modifiers={'min_players': 4, 'max_players': 6}
             ),
@@ -563,10 +494,9 @@ class ElementFactory:
                 alleg=Alleg.Neutral,
                 max_damage=10,
                 win_cond=win_conditions.bob,
-                win_cond_desc="You have 5 or more equipment cards.",
+                win_cond_desc="Vous avez 5 cartes d'équipement ou plus.",
                 special=specials.bob,
-                special_desc=("If you kill another player, "
-                              "you may take all of their Equipment cards."),
+                special_desc="Si vous tuez un autre joueur, vous pouvez prendre toutes ses cartes d'équipement.",
                 resource_id="bob2",
                 modifiers={'min_players': 7, 'max_players': 8}
             ),
@@ -575,10 +505,9 @@ class ElementFactory:
                 alleg=Alleg.Neutral,
                 max_damage=11,
                 win_cond=win_conditions.catherine,
-                win_cond_desc=("You are either the first to die or one of the"
-                               " last two players alive."),
+                win_cond_desc="Vous êtes soit le premier à mourir, soit l'un des deux derniers joueurs en vie.",
                 special=specials.catherine,
-                special_desc="When your turn starts, you heal 1 damage.",
+                special_desc="Quand votre tour commence, vous soignez 1 dégât.",
                 resource_id="catherine"
             ),
             character.Character(
@@ -586,11 +515,9 @@ class ElementFactory:
                 alleg=Alleg.Hunter,
                 max_damage=14,
                 win_cond=win_conditions.hunter,
-                win_cond_desc="All of the Shadows are dead.",
+                win_cond_desc="Toutes les Ombres sont mortes.",
                 special=specials.george,
-                special_desc=("Once per game, when your turn starts, you can"
-                              " pick a player and damage them for the"
-                              " roll of a 4-sided die."),
+                special_desc="Une fois par partie, quand votre tour commence, vous pouvez choisir un joueur et lui infliger les dégâts du lancer du dé à 4 faces.",
                 resource_id="george"
             ),
             character.Character(
@@ -598,10 +525,9 @@ class ElementFactory:
                 alleg=Alleg.Hunter,
                 max_damage=12,
                 win_cond=win_conditions.hunter,
-                win_cond_desc="All of the Shadows are dead.",
+                win_cond_desc="Toutes les Ombres sont mortes.",
                 special=specials.fuka,
-                special_desc=("Once per game, when your turn starts, "
-                              "you can set the damage of any player to 7."),
+                special_desc="Une fois par partie, quand votre tour commence, vous pouvez fixer les dégâts de n'importe quel joueur à 7.",
                 resource_id="fu-ka"
             ),
             character.Character(
@@ -609,11 +535,9 @@ class ElementFactory:
                 alleg=Alleg.Hunter,
                 max_damage=12,
                 win_cond=win_conditions.hunter,
-                win_cond_desc="All of the Shadows are dead.",
+                win_cond_desc="Toutes les Ombres sont mortes.",
                 special=specials.franklin,
-                special_desc=("Once per game, when your turn starts, "
-                              "you can pick a player and damage"
-                              " them for the roll of a 6-sided die."),
+                special_desc="Une fois par partie, quand votre tour commence, vous pouvez choisir un joueur et lui infliger les dégâts du lancer du dé à 6 faces.",
                 resource_id="franklin"
             ),
             character.Character(
@@ -621,11 +545,9 @@ class ElementFactory:
                 alleg=Alleg.Hunter,
                 max_damage=10,
                 win_cond=win_conditions.hunter,
-                win_cond_desc="All of the Shadows are dead.",
+                win_cond_desc="Toutes les Ombres sont mortes.",
                 special=specials.ellen,
-                special_desc=("Once per game, when your turn starts, "
-                              "you can choose a player and permanently"
-                              " void their special ability."),
+                special_desc="Une fois par partie, quand votre tour commence, vous pouvez choisir un joueur et annuler définitivement sa capacité spéciale.",
                 resource_id="ellen"
             )
         ]
@@ -633,43 +555,43 @@ class ElementFactory:
         # Initialize areas
         self.AREAS = [
             area.Area(
-                name="Hermit's Cabin",
-                desc="Draw a Hermit Card.",
+                name="Cabane de l'Ermite",
+                desc="Piochez une carte Ermite.",
                 domain=[2, 3],
                 action=lambda gc, player: player.drawCard(gc.hermit_cards),
                 resource_id="hermits-cabin"
             ),
             area.Area(
-                name="Underworld Gate",
-                desc="Draw a card from the deck of your choice.",
+                name="Porte des Enfers",
+                desc="Piochez une carte dans le deck de votre choix.",
                 domain=[4, 5],
                 action=area.underworld_gate_action,
                 resource_id="underworld-gate"
             ),
             area.Area(
-                name="Church",
-                desc="Draw a White Card.",
+                name="Église",
+                desc="Piochez une carte Blanche.",
                 domain=[6],
                 action=lambda gc, player: player.drawCard(gc.white_cards),
                 resource_id="church"
             ),
             area.Area(
-                name="Cemetery",
-                desc="Draw a Black Card.",
+                name="Cimetière",
+                desc="Piochez une carte Noire.",
                 domain=[8],
                 action=lambda gc, player: player.drawCard(gc.black_cards),
                 resource_id="cemetery"
             ),
             area.Area(
-                name="Weird Woods",
-                desc="Heal 1 damage or give 2 damage to any player.",
+                name="Bois Étrangers",
+                desc="Soignez 1 dégât ou infligez 2 dégâts à n'importe quel joueur.",
                 domain=[9],
                 action=area.weird_woods_action,
                 resource_id="weird-woods"
             ),
             area.Area(
-                name="Erstwhile Altar",
-                desc="Steal an equipment card from any player.",
+                name="Autel d'Antan",
+                desc="Volez une carte d'équipement à n'importe quel joueur.",
                 domain=[10],
                 action=area.erstwhile_altar_action,
                 resource_id="erstwhile-altar"
