@@ -14,14 +14,14 @@ def test_weird_woods():
 
     # Set up rigged game context
     gc, ef = H.fresh_gc_ef()
-    area = H.get_area_by_name(gc, "Weird Woods")
+    area = H.get_area_by_name(gc, "Bois Étrangers")
 
     target = H.get_a_shadow(gc)
     actor = H.get_a_hunter(gc)
 
     gc.ask_h = H.answer_sequence([
-        target.user_id, 'Give 2 damage',  # test damage
-        target.user_id, 'Heal 1 damage',  # test heal
+        target.user_id, 'Donner 2 dégâts',  # test damage
+        target.user_id, 'Soigner 1 dégât',  # test heal
     ])
 
     # Check give 2 damage
@@ -37,13 +37,13 @@ def test_erstwhile_altar():
 
     # Set up rigged game context
     gc, ef = H.fresh_gc_ef()
-    area = H.get_area_by_name(gc, "Erstwhile Altar")
+    area = H.get_area_by_name(gc, "Autel d'Antan")
 
     target = H.get_a_shadow(gc)
     actor = H.get_a_hunter(gc)
 
     gc.ask_h = H.answer_sequence([
-        target.user_id, 'Holy Robe'  # test pick an equipment to steal
+        target.user_id, 'Robe Sainte'  # test pick an equipment to steal
     ])
 
     # Check that nothing happens if no one has equipment
@@ -51,15 +51,15 @@ def test_erstwhile_altar():
     assert all([len(p.equipment) == 0 for p in gc.players])
 
     # Check that nothing happens if only current player has equipment
-    chainsaw = H.get_card_by_title(ef, "Chainsaw")
+    chainsaw = H.get_card_by_title(ef, "Tronçonneuse")
     actor.equipment.append(chainsaw)
     area.action(gc, actor)
     assert all([len(p.equipment) == 0 for p in gc.players if p != actor])
     assert actor.equipment == [chainsaw]
 
     # Check that selected equipment is stolen from selected player
-    axe = H.get_card_by_title(ef, "Rusted Broad Axe")
-    roly_hobe = H.get_card_by_title(ef, "Holy Robe")
+    axe = H.get_card_by_title(ef, "Hache Large Oxydée")
+    roly_hobe = H.get_card_by_title(ef, "Robe Sainte")
     target.equipment.append(axe)
     target.equipment.append(roly_hobe)
     area.action(gc, actor)
@@ -72,7 +72,7 @@ def test_underworld_gate():
     # Set up rigged game context
     gc, ef = H.fresh_gc_ef()
     p1 = gc.players[0]
-    area = H.get_area_by_name(gc, "Underworld Gate")
+    area = H.get_area_by_name(gc, "Porte des Enfers")
     whites = copy.copy(gc.white_cards.cards)
     blacks = copy.copy(gc.black_cards.cards)
     hermits = copy.copy(gc.hermit_cards.cards)

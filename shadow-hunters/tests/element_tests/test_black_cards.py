@@ -14,7 +14,7 @@ def test_bloodthirsty_spider():
         # Setup rigged game context
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
-        c = H.get_card_by_title(ef, "Bloodthirsty Spider")
+        c = H.get_card_by_title(ef, "Araignée Assoiffée de Sang")
 
         # Check that user and target take 2 damage and everyone else is
         # unaffected
@@ -31,7 +31,7 @@ def test_vampire_bat():
         # Setup rigged game context
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
-        c = H.get_card_by_title(ef, "Vampire Bat")
+        c = H.get_card_by_title(ef, "Chauve-souris Vampirique")
 
         # Check that user heals 1 damage and target takes 2 damage and everyone
         # else is unaffected
@@ -49,14 +49,14 @@ def test_moody_goblin():
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
         p2 = gc.players[1]
-        c = H.get_card_by_title(ef, "Moody Goblin")
+        c = H.get_card_by_title(ef, "Gobelin Capricieux")
 
         # Check that nothing happens if no one has equipment
         c.use({'self': p2, 'card': c})
         assert not p2.equipment
 
         # Give p1 holy robe
-        roly_hobe = H.get_card_by_title(ef, "Holy Robe")
+        roly_hobe = H.get_card_by_title(ef, "Robe Sainte")
         p1.equipment.append(roly_hobe)
 
         # Check that robe is stolen
@@ -73,7 +73,7 @@ def test_diabolic_ritual():
         h = H.get_a_hunter(gc)
         s = H.get_a_shadow(gc)
         n = H.get_a_neutral(gc)
-        c = H.get_card_by_title(ef, "Diabolic Ritual")
+        c = H.get_card_by_title(ef, "Rituel Diabolique")
 
         # Check that hunters do nothing
         h.damage = 3
@@ -87,7 +87,7 @@ def test_diabolic_ritual():
 
         # Shadow do nothing
         gc.ask_h = H.answer_sequence(
-            ['Do nothing', 'Reveal and heal fully'])
+            ['Ne rien faire', 'Révéler et se soigner entièrement'])
         s.damage = 3
         c.use({'self': s, 'card': c})
         assert s.state == C.PlayerState.Hidden and s.damage == 3
@@ -105,15 +105,15 @@ def test_banana_peel():
         p1 = gc.players[0]
         p2 = gc.players[1]
         gc.ask_h = H.answer_sequence([
-            "Receive 1 damage",
-            "Give an equipment card",
-            "Holy Robe",
+            "Recevoir 1 dégât",
+            "Donner une carte d'équipement",
+            "Robe Sainte",
             p2.user_id
         ])
-        c = H.get_card_by_title(ef, "Banana Peel")
+        c = H.get_card_by_title(ef, "Épluchure de Banane")
 
         # Give p1 holy robe
-        roly_hobe = H.get_card_by_title(ef, "Holy Robe")
+        roly_hobe = H.get_card_by_title(ef, "Robe Sainte")
         p1.equipment.append(roly_hobe)
 
         # Check take one damage
@@ -137,8 +137,8 @@ def test_dynamite():
         c = H.get_card_by_title(ef, "Dynamite")
 
         # Put one player in each area
-        area_names = ["Church", "Cemetery", "Erstwhile Altar",
-                      "Weird Woods", "Hermit\'s Cabin", "Underworld Gate"]
+        area_names = ["Église", "Cimetière", "Autel d'Antan",
+                      "Bois Étrangers", "Hermit\'s Cabin", "Porte des Enfers"]
         areas = [H.get_area_by_name(gc, a) for a in area_names]
         for p in gc.players:
             p.move(areas.pop(0))
@@ -157,11 +157,11 @@ def test_spiritual_doll():
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
         p2 = gc.players[1]
-        c = H.get_card_by_title(ef, "Spiritual Doll")
+        c = H.get_card_by_title(ef, "Poupée Spirituelle")
         gc.ask_h = H.answer_sequence([
-            "Use Spiritual Doll",
+            "Use Poupée Spirituelle",
             p2.user_id,
-            "Roll the 6-sided die!"
+            "Lancer le dé à 6 faces !"
         ])
 
         # Check that someone gets hit

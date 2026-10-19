@@ -14,7 +14,7 @@ def test_flare_judgement():
         # Setup rigged game context
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
-        c = H.get_card_by_title(ef, "Flare of Judgement")
+        c = H.get_card_by_title(ef, "Brasier du Jugement")
 
         # Check that flare hits everyone for 2 except you
         c.use({'self': p1, 'card': c})
@@ -31,7 +31,7 @@ def test_first_aid():
         # Setup rigged game context
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
-        c = H.get_card_by_title(ef, "First Aid")
+        c = H.get_card_by_title(ef, "Premiers Secours")
 
         # Check that someone gets set to 7 by first aid and everyone else is
         # unaffected
@@ -47,7 +47,7 @@ def test_holy_water():
         # Setup rigged game context
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
-        c = H.get_card_by_title(ef, "Holy Water of Healing")
+        c = H.get_card_by_title(ef, "Eau Sainte de Guérison")
 
         # Check that holy water heals you by 2
         p1.damage = 4
@@ -63,7 +63,7 @@ def test_advent():
         h = H.get_a_hunter(gc)
         s = H.get_a_shadow(gc)
         n = H.get_a_neutral(gc)
-        c = H.get_card_by_title(ef, "Advent")
+        c = H.get_card_by_title(ef, "Avènement")
 
         # Check that shadows do nothing
         s.damage = 3
@@ -77,7 +77,7 @@ def test_advent():
 
         # Hunter do nothing
         gc.ask_h = H.answer_sequence(
-            ['Do nothing', 'Reveal and heal fully', 'Heal fully'])
+            ['Ne rien faire', 'Révéler et se soigner entièrement', 'Se soigner entièrement'])
         h.damage = 3
         c.use({'self': h, 'card': c})
         assert h.state == C.PlayerState.Hidden and h.damage == 3
@@ -98,7 +98,7 @@ def test_blessing():
         # Setup rigged game context
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
-        c = H.get_card_by_title(ef, "Blessing")
+        c = H.get_card_by_title(ef, "Bénédiction")
 
         # Check that user is not healed, but someone is and everyone else is
         # unaffected
@@ -119,7 +119,7 @@ def test_disenchant_mirror():
         h = H.get_a_hunter(gc)
         s = H.get_a_shadow(gc)
         n = H.get_a_neutral(gc)
-        c = H.get_card_by_title(ef, "Disenchant Mirror")
+        c = H.get_card_by_title(ef, "Miroir de Désenvoûtement")
 
         # Check that shadows reveal
         c.use({'self': s, 'card': c})
@@ -143,7 +143,7 @@ def test_chocolate():
             "Allie", "Ellen", "Ultra Soul"]][0]
         strong = [p for p in gc.players if p.character.name not in [
             "Allie", "Ellen", "Ultra Soul"]][0]
-        c = H.get_card_by_title(ef, "Chocolate")
+        c = H.get_card_by_title(ef, "Chocolat")
 
         # Strong player do nothing
         strong.damage = 3
@@ -152,7 +152,7 @@ def test_chocolate():
 
         # Weak player do nothing
         gc.ask_h = H.answer_sequence(
-            ['Do nothing', 'Reveal and heal fully', 'Heal fully'])
+            ['Ne rien faire', 'Révéler et se soigner entièrement', 'Se soigner entièrement'])
         weak.damage = 3
         c.use({'self': weak, 'card': c})
         assert weak.state == C.PlayerState.Hidden and weak.damage == 3
@@ -174,7 +174,7 @@ def test_concealed_knowledge():
         gc, ef = H.fresh_gc_ef(8)
         position = random.randint(0, 7)
         p1 = gc.players[position]
-        c = H.get_card_by_title(ef, "Concealed Knowledge")
+        c = H.get_card_by_title(ef, "Connaissance Cachée")
 
         # Check that card inserts player in proper place
         c.use({'self': p1, 'card': c})
@@ -190,7 +190,7 @@ def test_guardian_angel():
         gc, ef = H.fresh_gc_ef()
         p1 = gc.players[0]
         p2 = gc.players[1]
-        c = H.get_card_by_title(ef, "Guardian Angel")
+        c = H.get_card_by_title(ef, "Ange Gardien")
 
         # Check that p1 is immune to direct attacks
         c.use({'self': p1, 'card': c})

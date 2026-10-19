@@ -10,10 +10,10 @@ def first_aid(args):
     """Select a player to use card on (includes user)"""
 
     args['self'].gc.ask_h(
-        'confirm', {'options': ["Use First Aid"]}, args['self'].user_id)
+        'confirm', {'options': ["Utiliser Premiers Secours"]}, args['self'].user_id)
     target_Player = args['self'].choosePlayer(include_self=True)
     target_Player.setDamage(7, args['self'])
-    args['self'].gc.tell_h("{} applied {} to {}!", [
+    args['self'].gc.tell_h("{} a utilisé {} sur {}!", [
                            args['self'].user_id, args['card'].title,
                            target_Player.user_id])
 
@@ -22,7 +22,7 @@ def judgement(args):
     """Give all players except user 2 damage"""
 
     args['self'].gc.ask_h(
-        'confirm', {'options': ["Unleash judgement"]}, args['self'].user_id)
+        'confirm', {'options': ["Déchaîner le jugement"]}, args['self'].user_id)
     for p in args['self'].gc.getLivePlayers(lambda x: (x != args['self'])):
         p.moveDamage(-2, args['self'])
 
@@ -31,7 +31,7 @@ def holy_water(args):
     """Heal user by 2 damage"""
 
     args['self'].gc.ask_h(
-        'confirm', {'options': ["Heal yourself"]}, args['self'].user_id)
+        'confirm', {'options': ["Vous soigner"]}, args['self'].user_id)
     args['self'].moveDamage(2, args['self'])
 
 
@@ -39,19 +39,19 @@ def advent(args):
     """If hunter, can reveal and heal fully,
     or heal fully if already revealed"""
 
-    data = {'options': ["Do nothing"]}
+    data = {'options': ["Ne rien faire"]}
     if args['self'].character.alleg == C.Alleg.Hunter:
         if args['self'].state == C.PlayerState.Hidden:
-            data['options'].append("Reveal and heal fully")
+            data['options'].append("Révéler et se soigner entièrement")
         else:
-            data['options'].append("Heal fully")
+            data['options'].append("Se soigner entièrement")
 
     # Get decision and take corresponding action
     decision = args['self'].gc.ask_h(
         'yesno', data, args['self'].user_id)['value']
-    if decision == "Do nothing":
-        args['self'].gc.tell_h("{} did nothing.", [args['self'].user_id])
-    elif decision == "Reveal and heal fully":
+    if decision == "Ne rien faire":
+        args['self'].gc.tell_h("{} n'a rien fait.", [args['self'].user_id])
+    elif decision == "Révéler et se soigner entièrement":
         args['self'].reveal()
         args['self'].setDamage(0, args['self'])
     else:
@@ -61,16 +61,16 @@ def advent(args):
 def disenchant_mirror(args):
     """If shadow and not unknown, force reveal"""
 
-    data = {'options': ["Do nothing"]}
+    data = {'options': ["Ne rien faire"]}
     is_shadow = args['self'].character.alleg == C.Alleg.Shadow
     if is_shadow and args['self'].character.name != "Unknown":
-        data = {'options': ["Reveal yourself"]}
+        data = {'options': ["Révélez-vous"]}
 
     # Reveal character, or do nothing if hunter
     decision = args['self'].gc.ask_h(
         'yesno', data, args['self'].user_id)['value']
-    if decision == "Do nothing":
-        args['self'].gc.tell_h("{} did nothing.", [args['self'].user_id])
+    if decision == "Ne rien faire":
+        args['self'].gc.tell_h("{} n'a rien fait.", [args['self'].user_id])
     else:
         args['self'].reveal()
 
@@ -80,7 +80,7 @@ def blessing(args):
 
     # Choose a player to use blessing on
     args['self'].gc.ask_h(
-        'confirm', {'options': ["Bless someone"]}, args['self'].user_id)
+        'confirm', {'options': ["Bénir quelqu'un"]}, args['self'].user_id)
     target = args['self'].choosePlayer()
 
     # Roll dice to get value to heal by
@@ -88,27 +88,27 @@ def blessing(args):
 
     # Heal target player
     target.moveDamage(roll_result, args['self'])
-    args['self'].gc.tell_h("The blessing healed {}!", [target.user_id])
+    args['self'].gc.tell_h("La bénédiction a soigné {}!", [target.user_id])
 
 
 def chocolate(args):
     """If low-hp character, can reveal and heal fully,
     or heal fully if already revealed"""
 
-    data = {'options': ["Do nothing"]}
+    data = {'options': ["Ne rien faire"]}
     low_hp = ["Allie", "Agnes", "Emi", "Ellen", "Ultra Soul", "Unknown"]
     if args['self'].character.name in low_hp:
         if args['self'].state == C.PlayerState.Hidden:
-            data['options'].append("Reveal and heal fully")
+            data['options'].append("Révéler et se soigner entièrement")
         else:
-            data['options'].append("Heal fully")
+            data['options'].append("Se soigner entièrement")
 
     # Get decision and take corresponding action
     decision = args['self'].gc.ask_h(
         'yesno', data, args['self'].user_id)['value']
-    if decision == "Do nothing":
+    if decision == "Ne rien faire":
         args['self'].gc.tell_h("{} did nothing.", [args['self'].user_id])
-    elif decision == "Reveal and heal fully":
+    elif decision == "Révéler et se soigner entièrement":
         args['self'].reveal()
         args['self'].setDamage(0, args['self'])
     else:
@@ -119,7 +119,7 @@ def concealed_knowledge(args):
     """Change turn order so that current player goes again"""
 
     args['self'].gc.ask_h(
-        'confirm', {'options': ["Use Concealed Knowledge"]},
+        'confirm', {'options': ["Utiliser Connaissance Cachée"]},
         args['self'].user_id)
     args['self'].gc.turn_order.insert(
         args['self'].gc.turn_order.index(args['self']), args['self'])
@@ -147,7 +147,7 @@ def bloodthirsty_spider(args):
     target = args['self'].choosePlayer()
 
     if target.hasEquipment("Talisman"):
-        args['self'].gc.tell_h("{}'s {} protected them from damage!", [
+        args['self'].gc.tell_h("{}'s {} les a protégé(e)s des dégâts !", [
                                target.user_id, "Talisman"])
     else:
         target.moveDamage(-2, args['self'])
@@ -162,7 +162,7 @@ def vampire_bat(args):
     target = args['self'].choosePlayer()
 
     if target.hasEquipment("Talisman"):
-        args['self'].gc.tell_h("{}'s {} protected them from damage!", [
+        args['self'].gc.tell_h("{}'s {} les a protégé(e)s des dégâts !", [
                                target.user_id, "Talisman"])
     else:
         target.moveDamage(-2, args['self'])
@@ -189,15 +189,15 @@ def moody_goblin(args):
 def diabolic_ritual(args):
     """If shadow, can reveal and heal fully"""
 
-    data = {'options': ["Do nothing"]}
+    data = {'options': ["Ne rien faire"]}
     is_shadow = args['self'].character.alleg == C.Alleg.Shadow
     if is_shadow and args['self'].state == C.PlayerState.Hidden:
-        data['options'].append("Reveal and heal fully")
+        data['options'].append("Révéler et se soigner entièrement")
 
     # Get decision and take corresponding action
     decision = args['self'].gc.ask_h(
         'yesno', data, args['self'].user_id)['value']
-    if decision == "Do nothing":
+    if decision == "Ne rien faire":
         args['self'].gc.tell_h("{} did nothing.", [args['self'].user_id])
     else:
         args['self'].reveal()
@@ -209,14 +209,14 @@ def banana_peel(args):
     If no equipment, must take damage"""
 
     if len(args['self'].equipment):
-        data = {'options': ["Give an equipment card", "Receive 1 damage"]}
+        data = {'options': ["Donner une carte d'équipement", "Recevoir 1 dégât"]}
     else:
-        data = {'options': ["Receive 1 damage"]}
+        data = {'options': ["Recevoir 1 dégât"]}
 
     # Get decision and take action
     decision = args['self'].gc.ask_h(
         'yesno', data, args['self'].user_id)['value']
-    if decision == "Give an equipment card":
+    if decision == "Donner une carte d'équipement":
         # Choose an equipment card to give away
         args['self'].gc.tell_h(
             "{} is choosing an equipment card to give away...",
@@ -231,7 +231,7 @@ def banana_peel(args):
     else:
         # Take 1 damage
         args['self'].moveDamage(-1, args['self'])
-        args['self'].gc.tell_h("{} took {} damage.", [
+        args['self'].gc.tell_h("{} a subi {} dégât.", [
                                args['self'].user_id, "1"])
 
 
@@ -240,7 +240,7 @@ def dynamite(args):
 
     # Roll to find out which area gets hit
     args['self'].gc.ask_h(
-        'confirm', {'options': ["Light the fuse"]}, args['self'].user_id)
+        'confirm', {'options': ["Allumer la mèche"]}, args['self'].user_id)
     args['self'].gc.tell_h("{} is rolling for where the dynamite lands...", [
                            args['self'].user_id])
     roll_result = args['self'].rollDice()
@@ -248,7 +248,7 @@ def dynamite(args):
     # Hit area corresponding to roll number
     if roll_result == 7:
         # No area has 7 on it
-        args['self'].gc.tell_h("Nothing happens.", [])
+        args['self'].gc.tell_h("Rien ne se passe.", [])
 
     else:
         # Get area from roll result
@@ -256,11 +256,11 @@ def dynamite(args):
         destination = destination_Area.name
 
         # Hit all players in area for 3 damage
-        args['self'].gc.tell_h("{} blew up the {}!", ["Dynamite", destination])
+        args['self'].gc.tell_h("{} a fait exploser le {} !", ["Dynamite", destination])
         affected_players = args['self'].gc.getPlayersAt(destination)
         for p in affected_players:
             if p.hasEquipment("Talisman"):
-                args['self'].gc.tell_h("{}'s {} protected them from damage!", [
+                args['self'].gc.tell_h("{}'s {} les a protégé(e)s des dégâts !", [
                                        p.user_id, "Talisman"])
             else:
                 p.moveDamage(-3, args['self'])
@@ -272,7 +272,7 @@ def spiritual_doll(args):
 
     # Choose a player to target
     args['self'].gc.ask_h(
-        'confirm', {'options': ["Use Spiritual Doll"]}, args['self'].user_id)
+        'confirm', {'options': ["Utiliser Poupée Spirituelle"]}, args['self'].user_id)
     target = args['self'].choosePlayer()
 
     # Roll 6-sided die
@@ -281,9 +281,9 @@ def spiritual_doll(args):
     # If roll is >= 5, user takes 3 damage. Otherwise, target takes 3 damage.
     if roll_result >= 5:
         args['self'].moveDamage(-3, args['self'])
-        args['self'].gc.tell_h('The {} backfired on {}!', [
+        args['self'].gc.tell_h('Le {} a retourné contre {} !', [
                                args['card'].title, args['self'].user_id])
     else:
         target.moveDamage(-3, args['self'])
-        args['self'].gc.tell_h('The {} cursed {}!', [
+        args['self'].gc.tell_h('Le {} a maudit {} !', [
                                args['card'].title, target.user_id])

@@ -137,7 +137,7 @@ def test_chooseEquipment():
     gc, ef = H.fresh_gc_ef()
     p1 = gc.players[0]
     p2 = gc.players[1]
-    roly_hobe = H.get_card_by_title(ef, "Holy Robe")
+    roly_hobe = H.get_card_by_title(ef, "Robe Sainte")
     talisman = H.get_card_by_title(ef, "Talisman")
     p1.equipment = [roly_hobe, talisman]
 
@@ -153,7 +153,7 @@ def test_giveEquipment():
     gc, ef = H.fresh_gc_ef()
     p1 = gc.players[0]
     p2 = gc.players[1]
-    roly_hobe = H.get_card_by_title(ef, "Holy Robe")
+    roly_hobe = H.get_card_by_title(ef, "Robe Sainte")
     p1.equipment.append(roly_hobe)
 
     # P1 gives holy robe to P2
@@ -179,8 +179,8 @@ def test_attack():
     # Check that equipment works
     p2.damage = 0
     p1.equipment = [
-        H.get_card_by_title(ef, "Holy Robe"),
-        H.get_card_by_title(ef, "Chainsaw"),
+        H.get_card_by_title(ef, "Robe Sainte"),
+        H.get_card_by_title(ef, "Tronçonneuse"),
         H.get_card_by_title(ef, "Butcher Knife")
     ]
     p1.attack(p2, 5)
@@ -248,7 +248,7 @@ def test_die():
     p1 = gc.players[0]
     p2 = gc.players[1]
     talisman = H.get_card_by_title(ef, "Talisman")
-    roly_hobe = H.get_card_by_title(ef, "Holy Robe")
+    roly_hobe = H.get_card_by_title(ef, "Robe Sainte")
     p1.equipment = [roly_hobe, talisman]
 
     # Player 1 dies by player 2
@@ -269,6 +269,6 @@ def test_move():
     p1 = gc.players[0]
 
     # Check that moving to a location updates player location
-    a = H.get_area_by_name(gc, "Weird Woods")
+    a = H.get_area_by_name(gc, "Bois Étrangers")
     p1.move(a)
     assert p1.location == a

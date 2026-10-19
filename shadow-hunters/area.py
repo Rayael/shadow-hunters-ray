@@ -29,14 +29,14 @@ class Area:
 def underworld_gate_action(gc, player):
 
     # Ask player which deck to draw from
-    data = {'options': ["Draw White Card",
-                        "Draw Black Card", "Draw Hermit Card"]}
+    data = {'options': ["Piocher une carte Blanche",
+                        "Piocher une carte Noire", "Piocher une carte Ermite"]}
     answer = player.gc.ask_h('select', data, player.user_id)['value']
 
     # Draw from corresponding deck
-    if answer == "Draw White Card":
+    if answer == "Piocher une carte Blanche":
         player.drawCard(gc.white_cards)
-    elif answer == "Draw Black Card":
+    elif answer == "Piocher une carte Noire":
         player.drawCard(gc.black_cards)
     else:
         player.drawCard(gc.hermit_cards)
@@ -48,19 +48,19 @@ def weird_woods_action(gc, player):
     target_Player = player.choosePlayer(include_self=True)
 
     # Choose whether to attack or heal
-    data = {'options': ["Heal 1 damage", "Give 2 damage"]}
+    data = {'options': ["Soigner 1 dégât", "Donner 2 dégâts"]}
     amount = player.gc.ask_h('select', data, player.user_id)['value']
-    if amount == "Heal 1 damage":
-        gc.tell_h("The power of the {} healed {}!", [
-                  "Weird Woods", target_Player.user_id])
+    if amount == "Soigner 1 dégât":
+        gc.tell_h("Le pouvoir du {} a soigné {}!", [
+                  "Bois Étrangers", target_Player.user_id])
         target_Player.moveDamage(1, player)
     else:
-        if target_Player.hasEquipment("Fortune Brooch"):
-            gc.tell_h("{}'s {} protected them from damage!", [
-                      target_Player.user_id, "Fortune Brooch"])
+        if target_Player.hasEquipment("Broche de la Fortune"):
+            gc.tell_h("{}'s {} les a protégé(e)s des dégâts!", [
+                      target_Player.user_id, "Broche de la Fortune"])
         else:
-            gc.tell_h("The power of the {} damaged {}!", [
-                      "Weird Woods", target_Player.user_id])
+            gc.tell_h("Le pouvoir du {} a endommagé {}!", [
+                      "Bois Étrangers", target_Player.user_id])
             target_Player.moveDamage(-2, player)
 
 
@@ -72,4 +72,4 @@ def erstwhile_altar_action(gc, player):
         equip_Equipment = player.chooseEquipment(target_Player)
         target_Player.giveEquipment(player, equip_Equipment)
     else:
-        gc.tell_h("Nobody has any items for {} to steal.", [player.user_id])
+        gc.tell_h("{} n'a aucun objet à voler.", [player.user_id])
