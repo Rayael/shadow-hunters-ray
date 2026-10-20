@@ -159,7 +159,7 @@ def test_spiritual_doll():
         p2 = gc.players[1]
         c = H.get_card_by_title(ef, "Poupée Spirituelle")
         gc.ask_h = H.answer_sequence([
-            "Use Poupée Spirituelle",
+            "Utiliser Poupée Spirituelle",
             p2.user_id,
             "Lancer le dé à 6 faces !"
         ])

@@ -312,16 +312,16 @@ class Player:
         result = binop(max(r4, r6), min(r4, r6))
 
         # Set prompt based on type of roll
-        prompt = 'Roll the dice!'
+        prompt = 'Lancer les dés !'
         if not six:
-            prompt = 'Roll the 4-sided die!'
+            prompt = 'Lancer le dé à 4 faces !'
         elif not four:
-            prompt = 'Roll the 6-sided die!'
+            prompt = 'Lancer le dé à 6 faces !'
 
         # Ask for confirmation and display results
         self.gc.ask_h('confirm', {'options': [prompt]}, self.user_id)
         self.gc.show_h({'type': 'roll', '4-sided': r4, '6-sided': r6})
-        self.gc.tell_h("{} rolled a {}!", [self.user_id, result])
+        self.gc.tell_h("{} a obtenu {} !", [self.user_id, result])
         return result
 
     def chooseArea(self):

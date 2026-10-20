@@ -181,7 +181,7 @@ def test_attack():
     p1.equipment = [
         H.get_card_by_title(ef, "Robe Sainte"),
         H.get_card_by_title(ef, "Tronçonneuse"),
-        H.get_card_by_title(ef, "Butcher Knife")
+        H.get_card_by_title(ef, "Couteau de Boucher")
     ]
     p1.attack(p2, 5)
     assert p2.damage == 6

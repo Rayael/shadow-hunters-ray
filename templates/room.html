@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -58,16 +58,16 @@
       <script>var usrctx = {{ context | tojson | safe }};</script>
 
       <div id="startButton">
-        <form id="start" onsubmit="return false;"><input id="start-game" type="submit" class="start" value="Start Game"/></form>
+        <form id="start" onsubmit="return false;"><input id="start-game" type="submit" class="start" value="Commencer la partie"/></form>
       </div>
 
       <form id="selectPlayers" onsubmit="return false;">
         <select id="nPlayers">
-          <option value="4">4 Players</option>
-          <option value="5" selected>5 Players</option>
-          <option value="6">6 Players</option>
-          <option value="7">7 Players</option>
-          <option value="8">8 Players</option>
+          <option value="4">4 Joueurs</option>
+          <option value="5" selected>5 Joueurs</option>
+          <option value="6">6 Joueurs</option>
+          <option value="7">7 Joueurs</option>
+          <option value="8">8 Joueurs</option>
         </select>
       </form>
 
@@ -77,7 +77,7 @@
         <div id="message_holder" style="height:260px; overflow:auto;"></div><br>
         <form id="chat" onsubmit="return false;">
           <input type="text" id="message" placeholder="message" autocomplete="off" style="width:70%"/>
-          <input type="submit" class="send" value="Send"/>
+          <input type="submit" class="send" value="Envoyer"/>
         </form>
       </div>
 
@@ -90,8 +90,8 @@
       <form id="select" style="display:none" onsubmit="return false;"></form>
       <form id="confirm" style="display:none" onsubmit="return false;"></form>
       <form id="yesno" style="display:none" onsubmit="return false;"></form>
-      <form id="reveal" style="display:none" onsubmit="return false;"><input type="submit" class="reveal" value="Reveal"/></form>
-      <form id="special" style="display:none" onsubmit="return false;"><input type="submit" class="special" value="Special"/></form>
+      <form id="reveal" style="display:none" onsubmit="return false;"><input type="submit" class="reveal" value="Révéler"/></form>
+      <form id="special" style="display:none" onsubmit="return false;"><input type="submit" class="special" value="Spécial"/></form>
     </div>
   </div>
 

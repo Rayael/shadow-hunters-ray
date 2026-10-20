@@ -267,7 +267,7 @@ var GameBoard = new Phaser.Class ({
         this.popupInfo.infoBox.depth = 30;
         this.popupInfo.displayInfo = this.add.text(this.popupInfo.infoBox.x - 80,
           this.popupInfo.infoBox.y - 40,
-          "Click on things to see more information! Click on the i button to close this popup.",
+          "Cliquez sur les éléments pour voir plus d’informations ! Cliquez sur le bouton i pour fermer cette fenêtre.",
           { font: '12px Palatino', fill: '#FFFFFF',
           wordWrap: { width: 130, useAdvancedWrap: true }});
         this.popupInfo.displayInfo.depth = 30;
@@ -342,9 +342,9 @@ var GameBoard = new Phaser.Class ({
 
             //set the text for inside of the box
             text.setText([
-                'Team: ' + this.charInfo.alleg,
-                'Win Condition: ' + this.charInfo.win_cond_desc,
-                'Special Ability: ' + this.charInfo.special_desc
+                'Équipe : ' + this.charInfo.alleg,
+                'Condition de victoire : ' + this.charInfo.win_cond_desc,
+                'Capacité spéciale : ' + this.charInfo.special_desc
                 ]);
 
             this.add.image(100, 366.975, "circle" + String(this.player.number)).setScale(1.025);
@@ -394,7 +394,7 @@ var GameBoard = new Phaser.Class ({
         });
     },
 
-    makeEquipment: function(card, i) {
+    makeÉquipement : function(card, i) {
 
             // Add equipment card image
             var equip_x = 265+i*107.450;
@@ -410,8 +410,8 @@ var GameBoard = new Phaser.Class ({
             // Add display text
             equip.displayInfo = this.add.text(equip.infoBox.x - 120, equip.infoBox.y - 40, " ", { font: '12px Palatino', fill: '#FFFFFF', wordWrap: { width: 250, useAdvancedWrap: true }});
             equip.displayInfo.setText([
-                "Equipment: " + card.title,
-                "Effect: " + card.desc
+                "Équipement : " + card.title,
+                "Effet : " + card.desc
                 ]);
             equip.displayInfo.setVisible(false);
             equip.displayInfo.depth = 30;
@@ -434,7 +434,7 @@ var GameBoard = new Phaser.Class ({
 
             var display_text = []
             for (var i = 0; i < this.gameData.public.characters.length; i++) {
-              display_text.push("Player: " + this.gameData.public.characters[i].name, "Dies At HP: " + this.gameData.public.characters[i].max_damage + "\n");
+              display_text.push("Joueur : " + this.gameData.public.characters[i].name, "Meurt à PV : " + this.gameData.public.characters[i].max_damage + "\n");
           }
           sprite.displayInfo.setText(display_text);
           sprite.displayInfo.setVisible(false);
@@ -511,7 +511,7 @@ var GameBoard = new Phaser.Class ({
 
         summaryIcon.names[i] = this.gameData.public.players[i].user_id;
         summaryIcon.damage[i] = this.gameData.public.players[i].damage;
-        summaryIcon.equipment[i] = "None";
+        summaryIcon.equipment[i] = "Aucun";
         if(this.player && (this.gameData.public.players[i].user_id === this.player.name)) {
 
           summaryIcon.characters[i] = this.charInfo.name;
@@ -531,9 +531,9 @@ var GameBoard = new Phaser.Class ({
       summaryIcon.displayInfo[i].setText([
           "Player Name: " + summaryIcon.names[i],
           "Character: " + summaryIcon.characters[i],
-          "Damage: " + summaryIcon.damage[i] + ", Team: " + summaryIcon.team[i],
-          "Win Condition: " + summaryIcon.win[i],
-          "Equipment: " + summaryIcon.equipment[i]
+          "Damage: " + summaryIcon.damage[i] + ", Équipe : " + summaryIcon.team[i],
+          "Condition de victoire : " + summaryIcon.win[i],
+          "Équipement : " + summaryIcon.equipment[i]
           ]);
 
       summaryIcon.displayInfo[i].depth = 40;
@@ -550,7 +550,7 @@ var GameBoard = new Phaser.Class ({
 },
 
     //the makePlayer function is what creates our sprite and adds him to the board.
-    makePlayer: function (name, data, num) {
+    makeJoueur : function (name, data, num) {
         var sprite = this.add.sprite(this.startSpots[num-1][0], this.startSpots[num-1][1], 'player' + String(num));
         sprite.hpTracker = this.add.image(882 + (24*(num-1)), this.hpStart, 'hpp' + String(num));
 
@@ -575,8 +575,8 @@ var GameBoard = new Phaser.Class ({
         sprite.infoBox.setVisible(false);
         sprite.displayInfo = this.add.text(sprite.infoBox.x - 120, sprite.infoBox.y - 40, " ", { font: '12px Palatino', fill: '#FFFFFF', wordWrap: { width: 250, useAdvancedWrap: true }});
         sprite.displayInfo.setText([
-            "Player: " + sprite.name,
-            "Equipment: None"
+            "Joueur : " + sprite.name,
+            "Équipement : Aucun"
             ]);
         sprite.displayInfo.setVisible(false);
 
@@ -589,7 +589,7 @@ var GameBoard = new Phaser.Class ({
     },
 
     //updates information about each player
-    updatePlayer: function (player, data) {
+    updateJoueur : function (player, data) {
 
         // Update name (in case replaced by CPU)
         player.name = data.user_id;
@@ -713,7 +713,7 @@ var GameBoard = new Phaser.Class ({
   }
 
   if(data.state == 0 && player.info.state != 0) {
-      this.gameSummary.characters[player.number - 1] = data.character.name+ " (Dead)";
+      this.gameSummary.characters[player.number - 1] = data.character.name+ " (Mort)";
   }
 
         // Update player info to contain new data
@@ -721,13 +721,13 @@ var GameBoard = new Phaser.Class ({
 
         // Update infobox
         if(Object.keys(player.info.location).length == 0) {
-            player.info.location.name = "None";
+            player.info.location.name = "Aucun";
         }
 
         var nEquip = player.info.equipment.length;
         if(nEquip == 0) {
-            player.info.equipment.list = "None";
-            this.gameSummary.equipment[player.number - 1] = "None";
+            player.info.equipment.list = "Aucun";
+            this.gameSummary.equipment[player.number - 1] = "Aucun";
         }
         else {
             player.info.equipment.list = "";
@@ -748,16 +748,16 @@ var GameBoard = new Phaser.Class ({
       }
 
       player.displayInfo.setText([
-        "Player: " + displayName,
-        "Equipment: " + player.info.equipment.list
+        "Joueur : " + displayName,
+        "Équipement : " + player.info.equipment.list
         ]);
 
       this.gameSummary.displayInfo[player.number - 1].setText([
           "Player Name: " + this.gameSummary.names[player.number - 1],
           "Character: " + this.gameSummary.characters[player.number - 1],
-          "Damage: " + this.gameSummary.damage[player.number - 1] + ", Team: " + this.gameSummary.team[player.number - 1],
-          "Win Condition: " + this.gameSummary.win[player.number - 1],
-          "Equipment: " + this.gameSummary.equipment[player.number - 1]
+          "Damage: " + this.gameSummary.damage[player.number - 1] + ", Équipe : " + this.gameSummary.team[player.number - 1],
+          "Condition de victoire : " + this.gameSummary.win[player.number - 1],
+          "Équipement : " + this.gameSummary.equipment[player.number - 1]
           ]);
   },
 
@@ -853,10 +853,10 @@ var GameBoard = new Phaser.Class ({
             this.gameEnd.winners[i].depth = 40;
             this.gameEnd.players_info[i].depth = 40;
             this.gameEnd.players_info[i].setText([
-                'Player: ' + winners[i].user_id,
+                'Joueur : ' + winners[i].user_id,
                 'Character: ' + winners[i].character.name,
-                'Team: ' + winners[i].character.alleg,
-                'Win Condition: ' + winners[i].character.win_cond_desc
+                'Équipe : ' + winners[i].character.alleg,
+                'Condition de victoire : ' + winners[i].character.win_cond_desc
                 ]);
         }
 
@@ -921,9 +921,9 @@ var GameBoard = new Phaser.Class ({
 
         this.cards.cardsDrawn[cardsOut].cardText.setText([
             charInfo.player.character.name,
-            "Team: " + charInfo.player.character.alleg,
-            "Win Condition: " + charInfo.player.character.win_cond_desc,
-            "Special Ability: " + charInfo.player.character.special_desc
+            "Équipe : " + charInfo.player.character.alleg,
+            "Condition de victoire : " + charInfo.player.character.win_cond_desc,
+            "Capacité spéciale : " + charInfo.player.character.special_desc
             ]);
 
         this.cards.cardsDrawn[cardsOut].setInteractive();
@@ -940,9 +940,9 @@ var GameBoard = new Phaser.Class ({
               this.gameSummary.displayInfo[i].setText([
                 "Player Name: " + this.gameSummary.names[i],
                 "Character: " + this.gameSummary.characters[i],
-                "Damage: " + this.gameSummary.damage[i] + ", Team: " + this.gameSummary.team[i],
-                "Win Condition: " + this.gameSummary.win[i],
-                "Equipment: " + this.gameSummary.equipment[i]
+                "Damage: " + this.gameSummary.damage[i] + ", Équipe : " + this.gameSummary.team[i],
+                "Condition de victoire : " + this.gameSummary.win[i],
+                "Équipement : " + this.gameSummary.equipment[i]
                 ]);
 
               this.gameSummary.displayCharacter[i].charImage.destroy();
@@ -972,10 +972,10 @@ var GameBoard = new Phaser.Class ({
         });
 
         if(charInfo.type === "die") {
-          this.cards.cardsDrawn[cardsOut].cardText.setText([charInfo.player.user_id, "died!"]);
+          this.cards.cardsDrawn[cardsOut].cardText.setText([charInfo.player.user_id, "est mort !"]);
       }
       else {
-          this.cards.cardsDrawn[cardsOut].cardText.setText([ charInfo.player.user_id, "revealed!"]);
+          this.cards.cardsDrawn[cardsOut].cardText.setText([ charInfo.player.user_id, "identité révélée !"]);
       }
       this.cards.cardsDrawn[cardsOut].depth = 40;
       this.cards.cardsDrawn[cardsOut].cardText.depth = 40;
