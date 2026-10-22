@@ -876,13 +876,13 @@ var GameBoard = new Phaser.Class ({
         if(cardInfo.color == "White") {
             this.cards.cardsDrawn[cardsOut] = this.add.image(300, 375, "whitecard");
             this.cards.cardsDrawn[cardsOut].cardText = this.add.text(235, 375, " ", { font: '10px Palatino', fill: '#000000', wordWrap: { width: 139, useAdvancedWrap: true }});
-            this.cards.cardsDrawn[cardsOut].charImage = this.add.image(300, 325, cardInfo.title);
+            this.cards.cardsDrawn[cardsOut].charImage = this.add.image(300, 325, cardInfo.resource_id);
         }
 
         else if (cardInfo.color == "Black") {
             this.cards.cardsDrawn[cardsOut] = this.add.image(300, 375, "blackcard");
             this.cards.cardsDrawn[cardsOut].cardText = this.add.text(235, 375, " ", { font: '10px Palatino', fill: '#FFFFFF', wordWrap: { width: 139, useAdvancedWrap: true }});
-            this.cards.cardsDrawn[cardsOut].charImage = this.add.image(300, 325, cardInfo.title);
+            this.cards.cardsDrawn[cardsOut].charImage = this.add.image(300, 325, cardInfo.resource_id);
         }
         else {
             this.cards.cardsDrawn[cardsOut] = this.add.image(300, 375, "greencard");

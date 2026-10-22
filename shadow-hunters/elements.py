@@ -28,7 +28,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
-                use=None
+                use=None,
+                resource_id="mysticcompass"
             ),
             card.Card(
                 title="Talisman",
@@ -36,7 +37,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
-                use=None
+                use=None,
+                resource_id="talisman"
             ),
             card.Card(
                 title="Broche de la Fortune",
@@ -44,7 +46,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
-                use=None
+                use=None,
+                resource_id="fortunebrooch"
             ),
             card.Card(
                 title="Rosen d'Argent",
@@ -52,7 +55,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
-                use=None
+                use=None,
+                resource_id="silverrosary"
             ),
             card.Card(
                 title="Lance de Longin",
@@ -60,7 +64,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=True,
-                use=None
+                use=None,
+                resource_id="spearoflonginus"
             ),
             card.Card(
                 title="Avènement",
@@ -68,7 +73,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
-                use=single_use.advent
+                use=single_use.advent,
+                resource_id="advent"
             ),
             card.Card(
                 title="Miroir de Désenvoûtement",
@@ -76,7 +82,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
-                use=single_use.disenchant_mirror
+                use=single_use.disenchant_mirror,
+                resource_id="disenchantmirror"
             ),
             card.Card(
                 title="Bénédiction",
@@ -84,7 +91,8 @@ class ElementFactory:
                 color=CardType.White,
                 holder=None,
                 is_equip=False,
-                use=single_use.blessing
+                use=single_use.blessing,
+                resource_id="blessing"
             ),
             card.Card(
                 title="Chocolat",
