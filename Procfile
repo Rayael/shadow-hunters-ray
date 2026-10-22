@@ -1,1 +1,1 @@
-web: gunicorn -k eventlet -w 1 --timeout 120 shadow-hunters.app:app
+web: gunicorn -w 1 --timeout 120 shadow-hunters.app:app

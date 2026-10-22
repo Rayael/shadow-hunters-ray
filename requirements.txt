@@ -13,4 +13,3 @@ six==1.16.0
 
 # Production server for Render
 gunicorn==21.2.0
-eventlet==0.33.3
