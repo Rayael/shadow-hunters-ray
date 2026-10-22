@@ -1,3 +1,1 @@
-# Use direct script start to avoid Railpack auto-injecting Gunicorn
-# (hyphenated dir name is not a valid Python module for -m)
-web: python -u shadow-hunters/app.py
+web: gunicorn -k eventlet -w 1 --timeout 120 shadow-hunters.app:app
