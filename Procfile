@@ -1,1 +1,1 @@
-web: uvicorn shadow-hunters.app:app --host 0.0.0.0 --port $PORT
+web: gunicorn -w 1 --threads 4 --timeout 120 shadow-hunters.app:app
