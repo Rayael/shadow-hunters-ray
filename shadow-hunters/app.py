@@ -25,7 +25,7 @@ from flask import (
     Flask, render_template, url_for, redirect,
     request, flash, send_from_directory
 )
-from flask_socketio import SocketIO, join_room, leave_room
+from flask_socketio import SocketIO, join_room, leave_room, emit
 
 from game_context import GameContext
 from elements import ElementFactory
@@ -128,7 +128,8 @@ app = Flask(
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 socketio = SocketIO(app, async_handlers=True, async_mode='threading',
-                    cors_allowed_origins="*")
+                    cors_allowed_origins="*",
+                    logger=True, engineio_logger=True)
 
 
 # disable caching
@@ -846,8 +847,8 @@ def on_disconnect():
 
 
 if __name__ == '__main__':
-    # In production (Render), use: uvicorn shadow-hunters.app:app --host 0.0.0.0 --port $PORT
-    # Flask-SocketIO with async_mode='threading' uses long-polling (compatible with any WSGI server)
+    # In production (Render), run via: gunicorn -w 1 --threads 4 --timeout 120 shadow-hunters.app:app
+    # Flask-SocketIO with async_mode='threading' is compatible with any WSGI server
     port = int(os.getenv('PORT', 5000))
     socketio.run(app, debug=False, host="0.0.0.0", port=port,
                  allow_unsafe_werkzeug=True)
