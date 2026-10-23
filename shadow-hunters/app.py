@@ -127,7 +127,7 @@ app = Flask(
 )
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', secrets.token_hex(32))
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-socketio = SocketIO(app, async_handlers=True, async_mode='threading',
+socketio = SocketIO(app, async_handlers=True, async_mode='asgi',
                     cors_allowed_origins="*")
 
 
@@ -846,10 +846,7 @@ def on_disconnect():
 
 
 if __name__ == '__main__':
-    # In production, use the PORT provided by the platform (Railway)
+    # In production (Render), use: uvicorn shadow-hunters.app:socketio --host 0.0.0.0 --port $PORT
+    import uvicorn
     port = int(os.getenv('PORT', 5000))
-    # Disable debug in production
-    # allow_unsafe_werkzeug is required to run WerkSocketIO under production
-    # WSGI servers such as Railway's gunicorn wrapper.
-    socketio.run(app, debug=False, host="0.0.0.0", port=port,
-                 allow_unsafe_werkzeug=True)
+    uvicorn.run(socketio, host="0.0.0.0", port=port)
