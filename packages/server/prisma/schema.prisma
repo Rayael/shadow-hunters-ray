@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Lobby {
+  id        String   @id(default: cuid())
+  status    String   @default("LOBBY") // LOBBY | GAME
+  hostId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  passwordHash String
+
+  players   LobbyPlayer[]
+  sessions  Session[]
+  games     Game[]
+  logs      Log[]
+}
+
+model LobbyPlayer {
+  id        String   @id(default: cuid())
+  lobbyId   String
+  lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  userId    String   @unique // pseudo normalisé (identité stable)
+  displayName String
+  number    Int      // numéro d'arrivée (1-9)
+  color     String
+  isBot     Boolean  @default(false)
+  isHost    Boolean  @default(false)
+  joinedAt  DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  sessions  Session[]
+  @@index([lobbyId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id(default: cuid())
+  token     String   @unique // jeton difficile à deviner (cookie)
+  lobbyId   String
+  lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    LobbyPlayer @relation(fields: [playerId], references: [id])
+  socketId  String?
+  connected Boolean  @default(true)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([lobbyId])
+  @@index([playerId])
+}
+
+model Game {
+  id        String   @id(default: cuid())
+  lobbyId   String
+  lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  status    String   @default("setup") // setup | playing | game_over
+  round     Int      @default(1)
+  turnPlayerId String?
+  currentRoll Int?
+  gameOver  Boolean  @default(false)
+  stateJson Json     // état complet sérialisé du moteur
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    GameEvent[]
+  @@index([lobbyId])
+}
+
+model GameEvent {
+  id        String   @id(default: cuid())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  type      String
+  actorId   String?
+  targetId  String?
+  data      Json
+  timestamp DateTime @default(now())
+
+  @@index([gameId])
+  @@index([timestamp])
+}
+
+model Log {
+  id        String   @id(default: cuid())
+  lobbyId   String
+  lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  level     String
+  message   String
+  timestamp DateTime @default(now())
+
+  @@index([lobbyId])
+  @@index([timestamp])
+}

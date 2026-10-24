@@ -1,23 +1,33 @@
 {
-  "name": "shadow-hunters",
-  "version": "1.0.0",
-  "description": "Online multiplayer deduction-based survival game",
-  "main": "setup.js",
-  "dependencies": {
-    "testcafe": "^1.20.1"
-  },
-  "devDependencies": {},
+  "name": "shadow-hunters-ray",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Shadow Hunters - jeu de plateau web multijoueur en temps réel",
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/client"
+  ],
   "scripts": {
-    "test": "testcafe chrome tests/serial/ --selector-timeout 60000 --app \"AI_SLEEP=0 SOCKET_SLEEP=0.25 python3 shadow-hunters/app.py\" && testcafe -c 2 chrome tests/concurrent/ --app \"AI_SLEEP=0 SOCKET_SLEEP=0.25 python3 shadow-hunters/app.py\""
+    "install:all": "npm install",
+    "shared:install": "cd packages/shared && npm install",
+    "server:install": "cd packages/server && npm install",
+    "client:install": "cd packages/client && npm install",
+    "prisma:generate": "cd packages/server && npx prisma generate",
+    "prisma:migrate:dev": "cd packages/server && npx prisma migrate dev",
+    "prisma:migrate:deploy": "cd packages/server && npx prisma migrate deploy",
+    "server:dev": "cd packages/server && npm run dev",
+    "server:build": "cd packages/server && npm run build",
+    "server:start": "cd packages/server && npm start",
+    "client:dev": "cd packages/client && npm run dev",
+    "client:build": "cd packages/client && npm run build",
+    "test:shared": "cd packages/shared && npx vitest run",
+    "test:server": "cd packages/server && npx vitest run",
+    "test:client": "cd packages/client && npx vitest run",
+    "test:e2e": "cd packages/client && npx playwright test",
+    "test:all": "npm run test:shared && npm run test:server && npm run test:client"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Rayael/shadow-hunters-ray.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Rayael/shadow-hunters-ray/issues"
-  },
-  "homepage": "https://github.com/Rayael/shadow-hunters-ray#readme"
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
