@@ -1,11 +1,11 @@
 import {
-  ActionType, AreaId, CardId, CardRecord, CardType, CharacterId,
+  ActionType, AreaId, AreaRecord, CardId, CardRecord, CardType, CharacterId,
   GameEvent, GameState, GameView, PlayerId, PlayerPrivateView,
   PlayerPublicView, PlayerRecord, Phase, PlayerState,
 } from './types.js'
 import { CHARACTERS, getDefaultCharacterPool } from './characters.js'
 import { getAllCards } from './cards.js'
-import { getDefaultAreas, areaForRoll, AreaView } from './areas.js'
+import { getDefaultAreas, areaForRoll } from './areas.js'
 
 function now(): number { return Date.now() }
 

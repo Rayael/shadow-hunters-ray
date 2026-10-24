@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { GameEngine } from './engine.js'
 import { CHARACTERS } from './characters.js'
-import { Phase, ActionType, PlayerState, Allegiance } from './types.js'
+import { Phase, ActionType, PlayerState, Allegiance, CardType } from './types.js'
 
 function makePlayers(n: number, bots: number = 0) {
   return Array.from({ length: n }, (_, i) => ({
@@ -168,7 +168,7 @@ describe('GameEngine - victoire', () => {
   it('pioche une carte', () => {
     const engine = GameEngine.createGame('g1', makePlayers(4))
     const tp = engine.state.turnOrder[0]
-    const { card } = engine.drawCard(tp, 'white')
+    const { card } = engine.drawCard(tp, CardType.White)
     expect(card).not.toBeNull()
     expect(card?.holder).toBe(tp)
   })
