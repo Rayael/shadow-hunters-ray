@@ -1,5 +1,5 @@
 import {
-  ActionType, AreaId, AreaRecord, CardId, CardRecord, CardType, CharacterId,
+  ActionType, AreaId, AreaRecord, AreaView, CardId, CardRecord, CardType, CharacterId,
   GameEvent, GameState, GameView, PlayerId, PlayerPrivateView,
   PlayerPublicView, PlayerRecord, Phase, PlayerState,
 } from './types.js'
