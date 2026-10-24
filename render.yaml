@@ -1,15 +1,23 @@
 services:
   - type: web
     name: shadow-hunters
-    env: python
+    env: node
     region: frankfurt
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn -w 1 --threads 4 --timeout 120 shadow-hunters.app:app"
+    buildCommand: "npm install && npm run build && npx prisma migrate deploy"
+    startCommand: "cd packages/server && npm start"
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.10.12"
-      - key: SECRET_KEY
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: SESSION_SECRET
         generateValue: true
-      - key: LOG_LEVEL
-        value: "INFO"
+      - key: LOBBY_PASSWORD
+        value: EDGAR
+      - key: DATABASE_URL
+        sync: false
+      - key: PUBLIC_URL
+        sync: false

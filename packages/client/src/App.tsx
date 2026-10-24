@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import JoinScreen from './components/JoinScreen'
 import LobbyScreen from './components/LobbyScreen'
 import GameScreen from './components/GameScreen'
 import RulesModal from './components/RulesModal'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001'
+const API_URL = import.meta.env.VITE_API_URL || window.location.origin
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin
 
 type Screen = 'join' | 'lobby' | 'game'
 
@@ -18,9 +18,35 @@ export default function App() {
   const [gameState, setGameState] = useState<any>(null)
   const [privateView, setPrivateView] = useState<any>(null)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, { auth: { token: document.cookie.match(/session_token=([^;]+)/)?.[1] } })
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect()
+      }
+    }
+  }, [])
+
+  const handleJoin = useCallback(async (data: { password: string; displayName: string }) => {
+    const res = await fetch(`${API_URL}/api/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      alert(json.error || 'Erreur de connexion')
+      return
+    }
+    setPlayer(json.player)
+
+    // Connexion Socket.IO après authentification réussie (cookie défini par le serveur)
+    const socket = io(SOCKET_URL, {
+      auth: { token: json.token },
+    })
+    socketRef.current = socket
     setSocket(socket)
 
     socket.on('connect', () => {
@@ -47,24 +73,6 @@ export default function App() {
       console.log('Déconnecté du serveur')
     })
 
-    return () => {
-      socket.disconnect()
-    }
-  }, [])
-
-  const handleJoin = useCallback(async (data: { password: string; displayName: string }) => {
-    const res = await fetch(`${API_URL}/api/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-      credentials: 'include',
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      alert(json.error || 'Erreur de connexion')
-      return
-    }
-    setPlayer(json.player)
     setScreen('lobby')
   }, [])
 
@@ -99,7 +107,7 @@ export default function App() {
       {screen === 'join' && (
         <JoinScreen onJoin={handleJoin} />
       )}
-      {screen === 'lobby' && player && lobby && (
+      {screen === 'lobby' && player && lobby && socket && (
         <LobbyScreen
           player={player}
           lobby={lobby}
@@ -110,7 +118,7 @@ export default function App() {
           onRulesOpen={() => setRulesOpen(true)}
         />
       )}
-      {screen === 'game' && gameState && (
+      {screen === 'game' && gameState && socket && (
         <GameScreen
           player={player}
           public={gameState}

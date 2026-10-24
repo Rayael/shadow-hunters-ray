@@ -75,3 +75,27 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a2e; c
 .rules-sections section h3 { color: #4cc9f0; margin-bottom: 0.4rem; }
 .rules-sections p, .rules-sections li { font-size: 0.9rem; line-height: 1.5; }
 .note { margin-top: 1rem; font-size: 0.8rem; font-style: italic; opacity: 0.7; }
+
+.player-card.active { border-color: #4cc9f0; background: rgba(76, 201, 240, 0.1); }
+.target-btn { margin-top: 0.4rem; padding: 0.4rem; background: rgba(233, 69, 96, 0.2); border: 1px solid rgba(233, 69, 96, 0.4); color: #ff6b6b; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+.target-btn:hover { background: rgba(233, 69, 96, 0.4); }
+.target-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.area.selectable { background: rgba(76, 201, 240, 0.15); border-color: #4cc9f0; cursor: pointer; }
+.area.selectable:hover { background: rgba(76, 201, 240, 0.3); }
+.area.here { border-color: #e94560; }
+.move-btn { margin-top: auto; padding: 0.4rem; background: rgba(76, 201, 240, 0.2); border: 1px solid #4cc9f0; color: #4cc9f0; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+.move-btn:hover { background: rgba(76, 201, 240, 0.4); }
+.action-btn.end-turn { background: rgba(233, 69, 96, 0.2); border-color: rgba(233, 69, 96, 0.4); color: #ff6b6b; }
+.action-btn.end-turn:hover { background: rgba(233, 69, 96, 0.4); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.modal { background: #1a1a2e; padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); max-width: 400px; width: 90%; }
+.modal h3 { margin-top: 0; color: #e94560; margin-bottom: 0.8rem; }
+.modal p { margin-bottom: 1rem; font-size: 0.9rem; opacity: 0.9; }
+.area-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.area-list button { padding: 0.6rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #eee; cursor: pointer; text-align: left; }
+.area-list button:hover { background: rgba(255,255,255,0.15); }
+.target-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.target-list button { padding: 0.6rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #eee; cursor: pointer; text-align: left; }
+.target-list button:hover { background: rgba(255,255,255,0.15); }
+.cancel-btn { width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #aaa; cursor: pointer; }
+.cancel-btn:hover { background: rgba(255,255,255,0.1); color: #eee; }

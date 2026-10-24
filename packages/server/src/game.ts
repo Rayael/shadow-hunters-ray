@@ -5,6 +5,8 @@ import { getSocketPlayer, getSocketSession } from './auth.js'
 
 const games = new Map<string, GameEngine>()
 
+export { games }
+
 export function handleGameEvents(io: IOServer, socket: Socket) {
   const player = getSocketPlayer(socket)
   const session = getSocketSession(socket)

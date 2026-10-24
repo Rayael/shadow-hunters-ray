@@ -3,12 +3,20 @@ import { createServer } from 'http'
 import { Server as IOServer, Socket } from 'socket.io'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import path from 'path'
 import { PrismaClient } from '@prisma/client'
 import { rateLimit } from 'express-rate-limit'
-import * as z from 'zod'
 import { authenticateSession } from './auth.js'
 import { handleLobbyEvents } from './lobby.js'
-import { handleGameEvents } from './game.js'
+import { handleGameEvents, games } from './game.js'
+import {
+  validatePassword,
+  validateName,
+  validateLobbyCapacity,
+  validateUniqueName,
+  normalizeName,
+} from './validation.js'
+import { setupBotHandling } from './bot.js'
 
 export const prisma = new PrismaClient()
 
@@ -43,31 +51,31 @@ const authLimiter = rateLimit({
 app.get('/healthz', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
-const joinSchema = z.object({
-  password: z.string().min(1),
-  displayName: z.string().min(1).max(32),
-})
+
+// En production, servir le frontend buildé depuis le serveur
+if (NODE_ENV === 'production') {
+  const clientDist = path.resolve(__dirname, '../../client/dist')
+  app.use(express.static(clientDist))
+  app.get('*', (_req: Request, res: Response) => {
+    res.sendFile(path.join(clientDist, 'index.html'))
+  })
+}
 
 app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
-  const result = joinSchema.safeParse(req.body)
-  if (!result.success) {
-    return res.status(400).json({ error: 'Données invalides', details: result.error.flatten() })
+  const { password, displayName } = req.body
+
+  // Validation du mot de passe
+  const pwCheck = validatePassword(password, LOBBY_PASSWORD)
+  if (!pwCheck.ok) {
+    return res.status(401).json({ error: pwCheck.error })
   }
 
-  const { password, displayName } = result.data
-  if (password !== LOBBY_PASSWORD) {
-    return res.status(401).json({ error: 'Mot de passe incorrect' })
+  // Validation du pseudo
+  const nameCheck = validateName(displayName)
+  if (!nameCheck.ok) {
+    return res.status(400).json({ error: nameCheck.error })
   }
-
-  const normalized = displayName.trim().toLowerCase()
-  if (!normalized || normalized.length < 2) {
-    return res.status(400).json({ error: 'Pseudo trop court (2 caractères minimum)' })
-  }
-
-  const reserved = ['shadow', 'hunter', 'neutral', 'decline', 'cpu', 'bot']
-  if (reserved.includes(normalized)) {
-    return res.status(400).json({ error: 'Pseudo réservé' })
-  }
+  const normalized = nameCheck.normalized
 
   let lobby = await prisma.lobby.findFirst()
   if (!lobby) {
@@ -76,18 +84,22 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
     })
   }
 
+  // Vérifier doublon de pseudo (normalisé)
   const existing = await prisma.lobbyPlayer.findFirst({
     where: { lobbyId: lobby.id, userId: normalized },
   })
-  if (existing) {
-    return res.status(409).json({ error: 'Ce pseudo est déjà pris' })
+  const uniqueCheck = validateUniqueName(normalized, !!existing)
+  if (!uniqueCheck.ok) {
+    return res.status(409).json({ error: uniqueCheck.error })
   }
 
+  // Vérifier capacité (max 9)
   const playerCount = await prisma.lobbyPlayer.count({
     where: { lobbyId: lobby.id },
   })
-  if (playerCount >= 9) {
-    return res.status(403).json({ error: 'Le lobby est complet (9 places maximum)' })
+  const capacityCheck = validateLobbyCapacity(playerCount, 9)
+  if (!capacityCheck.ok) {
+    return res.status(403).json({ error: capacityCheck.error })
   }
 
   const colors = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
@@ -156,9 +168,27 @@ io.on('connection', (socket: Socket) => {
   handleGameEvents(io, socket)
 })
 
-httpServer.listen(PORT, () => {
-  console.log(`Shadow Hunters server listening on port ${PORT}`)
-})
+// Gestion automatique des bots (IA heuristique)
+setupBotHandling(io, games)
+
+// Démarrage et reprise de partie si existante
+async function start() {
+  // Tenter de restaurer une partie en cours depuis la DB
+  const existingGame = await prisma.game.findFirst({
+    where: { lobbyId: 'shadow-hunters' },
+    orderBy: { updatedAt: 'desc' },
+  })
+  if (existingGame) {
+    console.log('Partie existante trouvée, restauration…')
+    // Le moteur sera recréé à la demande via game:start ou game:reconnect
+  }
+
+  httpServer.listen(PORT, () => {
+    console.log(`Shadow Hunters server listening on port ${PORT}`)
+  })
+}
+
+start()
 
 process.on('SIGTERM', async () => {
   await prisma.$disconnect()
