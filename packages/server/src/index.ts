@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'crypto'
 import { createServer } from 'http'
+import express from 'express'
 import { Server as IOServer, Socket } from 'socket.io'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'

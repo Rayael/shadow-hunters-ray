@@ -1,5 +1,5 @@
 import { Server as IOServer, Socket } from 'socket.io'
-import { GameEngine } from '../shared/src/index.js'
+import { GameEngine } from '@shadow-hunters/shared'
 import { prisma } from './index.js'
 import { getSocketPlayer, getSocketSession } from './auth.js'
 
@@ -79,26 +79,21 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: string; 
 
     if (canExecute(bot.id, 'attack_player')) {
       const botPlayer = engine.state.players.get(bot.id)
-      const targets = Array.from(engine.state.players.values()).filter(
-        (p) => p.id !== bot.id && p.state !== 'dead' && p.location === botPlayer?.location
+      const allPlayers = Array.from(engine.state.players.values())
+      const targets = allPlayers.filter(
+        (p: { id: string; state: string; location: string | null }) => p.id !== bot.id && p.state !== 'dead' && p.location === botPlayer?.location
       )
       if (targets.length > 0) {
         const target = targets[Math.floor(Math.random() * targets.length)]
         engine.attackPlayer(bot.id, target.id)
-        io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-          public: engine.getPublicView(),
-        })
+        io.to(room).emit('game:state', { public: engine.getPublicView() })
       } else {
         engine.declineAttack(bot.id)
-        io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-          public: engine.getPublicView(),
-        })
+        io.to(room).emit('game:state', { public: engine.getPublicView() })
       }
     } else if (canExecute(bot.id, 'decline_attack')) {
       engine.declineAttack(bot.id)
-      io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-        public: engine.getPublicView(),
-      })
+      io.to(room).emit('game:state', { public: engine.getPublicView() })
     }
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
