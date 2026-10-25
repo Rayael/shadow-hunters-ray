@@ -20,7 +20,7 @@ export function handleLobbyEvents(io: IOServer, socket: Socket) {
       id: lobby.id,
       status: lobby.status,
       hostId: lobby.hostId,
-      players: lobby.players.map((p) => ({
+      players: lobby.players.map((p: { id: string; userId: string; displayName: string; number: number; color: string; isHost: boolean; isBot: boolean }) => ({
         id: p.id,
         userId: p.userId,
         displayName: p.displayName,
