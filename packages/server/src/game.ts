@@ -64,8 +64,18 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
       orderBy: { number: 'asc' },
     })
 
-    const humans = lobbyPlayers.filter((lp) => !lp.isBot)
-    const existingBots = lobbyPlayers.filter((lp) => lp.isBot).length
+    type LobbyPlayerRow = {
+      id: string
+      userId: string
+      displayName: string
+      number: number
+      color: string
+      isBot: boolean
+      isHost: boolean
+    }
+
+    const humans = lobbyPlayers.filter((lp: LobbyPlayerRow) => !lp.isBot)
+    const existingBots = lobbyPlayers.filter((lp: LobbyPlayerRow) => lp.isBot).length
     const neededBots = Math.max(0, totalPlayers - humans.length)
 
     if (neededBots > data.botCount) {
@@ -92,16 +102,15 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     const allPlayers = await prisma.lobbyPlayer.findMany({
       where: { lobbyId: session.lobbyId },
       orderBy: { number: 'asc' },
-    })
-
+    }) as LobbyPlayerRow[]
     if (allPlayers.length !== totalPlayers) {
       socket.emit('game:error', { error: 'Le nombre de joueurs ne correspond pas' })
       return
     }
     const engine = GameEngine.createGame(
       `game_${session.lobbyId}`,
-      allPlayers.map((lp) => ({
-        id: lp.userId as any,
+      allPlayers.map((lp: LobbyPlayerRow) => ({
+        id: lp.userId,
         name: lp.displayName,
         number: lp.number,
         color: lp.color,
@@ -123,7 +132,7 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     io.to(`game:${session.lobbyId}`).emit('game:state', { public: publicView })
 
     for (const lp of allPlayers) {
-      const privateView = engine.getPrivateView(lp.userId as any)
+      const privateView = engine.getPrivateView(lp.userId)
       const s = await prisma.session.findFirst({
         where: { playerId: lp.id, connected: true },
       })
@@ -145,7 +154,11 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     }
 
     const p = getSocketPlayer(socket)
-    const actorId = p.userId as any
+    if (!p) {
+      socket.emit('game:error', { error: 'Non authentifié' })
+      return
+    }
+    const actorId = p.userId
 
     try {
       let result: any = null
@@ -180,8 +193,9 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     const engine = getEngine()
     if (!engine) return
     const p = getSocketPlayer(socket)
-    const privateView = engine.getPrivateView(p.userId as any)
-    const publicView = engine.getPublicView(p.userId as any)
+    if (!p) return
+    const privateView = engine.getPrivateView(p.userId)
+    const publicView = engine.getPublicView(p.userId)
     socket.emit('game:state', { public: publicView })
     if (privateView) socket.emit('game:private', { private: privateView })
     await prisma.session.update({ where: { id: session.id }, data: { socketId: socket.id } })

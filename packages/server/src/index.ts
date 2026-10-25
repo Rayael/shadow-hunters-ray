@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express'
+import { createHash, randomBytes } from 'crypto'
 import { createServer } from 'http'
 import { Server as IOServer, Socket } from 'socket.io'
 import cookieParser from 'cookie-parser'
@@ -114,7 +114,7 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
     },
   })
 
-  const token = crypto.randomBytes(32).toString('hex')
+  const token = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   const session = await prisma.session.create({
     data: { token, lobbyId: lobby.id, playerId: player.id, expiresAt },

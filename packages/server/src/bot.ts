@@ -29,10 +29,9 @@ export function setupBotHandling(io: IOServer, games: Map<string, GameEngine>) {
   }, BOT_THINK_MS)
 }
 
-async function playBotTurn(io: IOServer, engine: GameEngine, bot: any) {
+async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: string; state: string; location: string | null; isBot: boolean }) {
   const { canExecute } = engine
 
-  // 1. Révélation au début du tour (aléatoire selon progression)
   if (bot.state === 'hidden' && Math.random() < 0.3) {
     if (canExecute(bot.id, 'reveal')) {
       engine.revealCharacter(bot.id)
@@ -42,7 +41,6 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: any) {
     }
   }
 
-  // 2. Lancer le dé
   if (canExecute(bot.id, 'roll_die')) {
     const { roll } = engine.rollDie(bot.id)
     io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
@@ -52,10 +50,8 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: any) {
       events: [{ type: 'roll', timestamp: Date.now(), actor: bot.id, data: { roll } }],
     })
 
-    // Attendre un peu pour simuler la réflexion
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    // 3. Si 7, choisir une zone aléatoire
     if (roll === 7 && canExecute(bot.id, 'choose_area')) {
       const areas = Array.from(engine.state.areas.keys())
       const areaId = areas[Math.floor(Math.random() * areas.length)]
@@ -67,7 +63,6 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: any) {
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    // 4. Action de lieu (si disponible)
     if (canExecute(bot.id, 'use_area_action')) {
       engine.useAreaAction(bot.id)
       io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
@@ -82,7 +77,6 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: any) {
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    // 5. Attaque (si disponible et cible sur même zone)
     if (canExecute(bot.id, 'attack_player')) {
       const botPlayer = engine.state.players.get(bot.id)
       const targets = Array.from(engine.state.players.values()).filter(
@@ -95,7 +89,6 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: any) {
           public: engine.getPublicView(),
         })
       } else {
-        // Pas de cible, on passe
         engine.declineAttack(bot.id)
         io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
           public: engine.getPublicView(),
@@ -110,7 +103,6 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: any) {
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    // 6. Fin de tour
     if (canExecute(bot.id, 'end_turn')) {
       engine.endTurn(bot.id)
       io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
