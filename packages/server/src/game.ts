@@ -1,5 +1,5 @@
 import { Server as IOServer, Socket } from 'socket.io'
-import { GameEngine } from '@shadow-hunters/shared'
+import { GameEngine } from '../shared/src/index.js'
 import { prisma } from './index.js'
 import { getSocketPlayer, getSocketSession } from './auth.js'
 
