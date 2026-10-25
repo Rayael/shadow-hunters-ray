@@ -29,26 +29,21 @@ export function setupBotHandling(io: IOServer, games: Map<string, GameEngine>) {
   }, BOT_THINK_MS)
 }
 
-async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: string; state: string; location: string | null; isBot: boolean }) {
+async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId; state: string; location: string | null; isBot: boolean }) {
   const { canExecute } = engine
+  const room = `game:${engine.state.id.replace('game_', '')}`
 
   if (bot.state === 'hidden' && Math.random() < 0.3) {
     if (canExecute(bot.id, 'reveal')) {
       engine.revealCharacter(bot.id)
-      io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-        public: engine.getPublicView(),
-      })
+      io.to(room).emit('game:state', { public: engine.getPublicView() })
     }
   }
 
   if (canExecute(bot.id, 'roll_die')) {
     const { roll } = engine.rollDie(bot.id)
-    io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-      public: engine.getPublicView(),
-    })
-    io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:events', {
-      events: [{ type: 'roll', timestamp: Date.now(), actor: bot.id, data: { roll } }],
-    })
+    io.to(room).emit('game:state', { public: engine.getPublicView() })
+    io.to(room).emit('game:events', { events: [{ type: 'roll', timestamp: Date.now(), actor: bot.id, data: { roll } }] })
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
@@ -56,23 +51,17 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: string; 
       const areas = Array.from(engine.state.areas.keys())
       const areaId = areas[Math.floor(Math.random() * areas.length)]
       engine.chooseArea(bot.id, areaId)
-      io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-        public: engine.getPublicView(),
-      })
+      io.to(room).emit('game:state', { public: engine.getPublicView() })
     }
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
     if (canExecute(bot.id, 'use_area_action')) {
       engine.useAreaAction(bot.id)
-      io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-        public: engine.getPublicView(),
-      })
+      io.to(room).emit('game:state', { public: engine.getPublicView() })
     } else if (canExecute(bot.id, 'decline_area_action')) {
       engine.declineAreaAction(bot.id)
-      io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-        public: engine.getPublicView(),
-      })
+      io.to(room).emit('game:state', { public: engine.getPublicView() })
     }
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
@@ -81,7 +70,7 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: string; 
       const botPlayer = engine.state.players.get(bot.id)
       const allPlayers = Array.from(engine.state.players.values())
       const targets = allPlayers.filter(
-        (p: { id: string; state: string; location: string | null }) => p.id !== bot.id && p.state !== 'dead' && p.location === botPlayer?.location
+        (p: { id: PlayerId; state: string; location: string | null }) => p.id !== bot.id && p.state !== 'dead' && p.location === botPlayer?.location
       )
       if (targets.length > 0) {
         const target = targets[Math.floor(Math.random() * targets.length)]
@@ -100,9 +89,7 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: string; 
 
     if (canExecute(bot.id, 'end_turn')) {
       engine.endTurn(bot.id)
-      io.to(`game:${engine.state.id.replace('game_', '')}`).emit('game:state', {
-        public: engine.getPublicView(),
-      })
+      io.to(room).emit('game:state', { public: engine.getPublicView() })
     }
   }
 }

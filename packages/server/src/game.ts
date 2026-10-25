@@ -110,7 +110,7 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     const engine = GameEngine.createGame(
       `game_${session.lobbyId}`,
       allPlayers.map((lp: LobbyPlayerRow) => ({
-        id: lp.userId,
+        id: lp.userId as PlayerId,
         name: lp.displayName,
         number: lp.number,
         color: lp.color,
@@ -132,7 +132,7 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     io.to(`game:${session.lobbyId}`).emit('game:state', { public: publicView })
 
     for (const lp of allPlayers) {
-      const privateView = engine.getPrivateView(lp.userId)
+      const privateView = engine.getPrivateView(lp.userId as PlayerId)
       const s = await prisma.session.findFirst({
         where: { playerId: lp.id, connected: true },
       })
@@ -158,7 +158,7 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
       socket.emit('game:error', { error: 'Non authentifié' })
       return
     }
-    const actorId = p.userId
+    const actorId = p.userId as PlayerId
 
     try {
       let result: any = null

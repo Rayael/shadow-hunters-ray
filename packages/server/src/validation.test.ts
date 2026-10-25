@@ -79,7 +79,7 @@ describe('validateLobbyCapacity', () => {
   it('refuse la 10ème place', () => {
     const r = validateLobbyCapacity(9, 9)
     expect(r.ok).toBe(false)
-    expect(r.error).toContain('9 places maximum')
+    if (!r.ok) expect(r.error).toContain('9 places maximum')
   })
 })
 
@@ -87,7 +87,7 @@ describe('validateUniqueName', () => {
   it('refuse un doublon', () => {
     const r = validateUniqueName('raphael', true)
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('Ce pseudo est déjà pris')
+    if (!r.ok) expect(r.error).toBe('Ce pseudo est déjà pris')
   })
 
   it('accepte un pseudo libre', () => {
