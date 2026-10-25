@@ -11,18 +11,24 @@ describe('validatePassword', () => {
   it('refuse un mot de passe incorrect', () => {
     const r = validatePassword('mauvais', 'EDGAR')
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('Mot de passe incorrect')
+    if (!r.ok) expect(r.error).toBe('Mot de passe incorrect')
   })
 
   it('refuse un mot de passe vide', () => {
     const r = validatePassword('', 'EDGAR')
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('Veuillez saisir le mot de passe')
+    if (!r.ok) expect(r.error).toBe('Veuillez saisir le mot de passe')
   })
 
   it('accepte le bon mot de passe', () => {
     const r = validatePassword('EDGAR', 'EDGAR')
     expect(r.ok).toBe(true)
+  })
+
+  it('refuse un pseudo vide', () => {
+    const r = validateName('')
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('Veuillez saisir un pseudo')
   })
 })
 
@@ -30,25 +36,25 @@ describe('validateName', () => {
   it('refuse un pseudo vide', () => {
     const r = validateName('')
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('Veuillez saisir un pseudo')
+    if (!r.ok) expect(r.error).toBe('Veuillez saisir un pseudo')
   })
 
   it('refuse un pseudo trop court', () => {
     const r = validateName('A')
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('Pseudo trop court (2 caractères minimum)')
+    if (!r.ok) expect(r.error).toBe('Pseudo trop court (2 caractères minimum)')
   })
 
   it('refuse un pseudo réservé', () => {
     const r = validateName('shadow')
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('Ce pseudo est réservé')
+    if (!r.ok) expect(r.error).toBe('Ce pseudo est réservé')
   })
 
   it('refuse un pseudo commençant par CPU', () => {
     const r = validateName('CPU_1')
     expect(r.ok).toBe(false)
-    expect(r.error).toBe('Ce pseudo est réservé')
+    if (!r.ok) expect(r.error).toBe('Ce pseudo est réservé')
   })
 
   it('accepte un pseudo valide et le normalise', () => {
