@@ -20,15 +20,22 @@ export async function authenticateSession(
     include: { player: true },
   })
 
-  if (!session || !session.connected) {
-    return next(new Error('Session invalide ou expirée'))
+  if (!session) {
+    return next(new Error('Session invalide'))
   }
 
   if (session.expiresAt < new Date()) {
     return next(new Error('Session expirée'))
   }
 
-  ;(socket as any).session = session
+  // La reconnexion est autorisée même si connected est false (découplage socket/DB).
+  // On marque la session connectée et on associe le socket courant.
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { connected: true, socketId: socket.id },
+  })
+
+  ;(socket as any).session = { ...session, connected: true, socketId: socket.id }
   ;(socket as any).player = session.player
   next()
 }

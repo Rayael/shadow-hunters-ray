@@ -25,12 +25,11 @@ export default function JoinScreen({ onJoin }: { onJoin: (data: { password: stri
           </label>
           <label>
             Pseudo
-            <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength="32" />
+            <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={32} />
           </label>
           {error && <div className="error">{error}</div>}
           <button type="submit">Rejoindre le lobby</button>
         </form>
-        <p className="hint">Mot de passe commun : EDGAR</p>
       </div>
     </div>
   )

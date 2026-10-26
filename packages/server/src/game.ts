@@ -7,6 +7,24 @@ const games = new Map<string, GameEngine>()
 
 export { games }
 
+export async function saveGameState(lobbyId: string, engine: GameEngine) {
+  const data = {
+    status: engine.state.phase,
+    round: engine.state.round,
+    turnPlayerId: engine.state.turnPlayerId ?? null,
+    currentRoll: engine.state.currentRoll ?? null,
+    gameOver: engine.state.gameOver,
+    stateJson: engine.state as any,
+    updatedAt: new Date(),
+  }
+  const existing = await prisma.game.findFirst({ where: { lobbyId } })
+  if (existing) {
+    await prisma.game.update({ where: { id: existing.id }, data })
+  } else {
+    await prisma.game.create({ data: { lobbyId, ...data } })
+  }
+}
+
 export function handleGameEvents(io: IOServer, socket: Socket) {
   const player = getSocketPlayer(socket)
   const session = getSocketSession(socket)
@@ -19,27 +37,7 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
   }
 
   async function saveState(engine: GameEngine) {
-    await prisma.game.upsert({
-      where: { lobbyId: session.lobbyId },
-      create: {
-        lobbyId: session.lobbyId,
-        status: engine.state.phase,
-        round: engine.state.round,
-        turnPlayerId: engine.state.turnPlayerId ?? null,
-        currentRoll: engine.state.currentRoll ?? null,
-        gameOver: engine.state.gameOver,
-        stateJson: engine.state as any,
-      },
-      update: {
-        status: engine.state.phase,
-        round: engine.state.round,
-        turnPlayerId: engine.state.turnPlayerId ?? null,
-        currentRoll: engine.state.currentRoll ?? null,
-        gameOver: engine.state.gameOver,
-        stateJson: engine.state as any,
-        updatedAt: new Date(),
-      },
-    })
+    await saveGameState(session.lobbyId, engine)
   }
 
   socket.on('game:start', async (data: { playerCount: number; botCount: number }) => {

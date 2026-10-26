@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Lobby {
-  id        String   @id(default: cuid())
+  id String @id @default(cuid())
   status    String   @default("LOBBY") // LOBBY | GAME
   hostId    String?
   createdAt DateTime @default(now())
@@ -22,7 +22,7 @@ model Lobby {
 }
 
 model LobbyPlayer {
-  id        String   @id(default: cuid())
+  id String @id @default(cuid())
   lobbyId   String
   lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
   userId    String   @unique // pseudo normalisé (identité stable)
@@ -40,7 +40,7 @@ model LobbyPlayer {
 }
 
 model Session {
-  id        String   @id(default: cuid())
+  id String @id @default(cuid())
   token     String   @unique // jeton difficile à deviner (cookie)
   lobbyId   String
   lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
@@ -57,7 +57,7 @@ model Session {
 }
 
 model Game {
-  id        String   @id(default: cuid())
+  id String @id @default(cuid())
   lobbyId   String
   lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
   status    String   @default("setup") // setup | playing | game_over
@@ -74,7 +74,7 @@ model Game {
 }
 
 model GameEvent {
-  id        String   @id(default: cuid())
+  id String @id @default(cuid())
   gameId    String
   game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   type      String
@@ -88,7 +88,7 @@ model GameEvent {
 }
 
 model Log {
-  id        String   @id(default: cuid())
+  id String @id @default(cuid())
   lobbyId   String
   lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
   level     String

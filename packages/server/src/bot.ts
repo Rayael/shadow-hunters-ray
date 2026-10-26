@@ -1,7 +1,7 @@
 import { Server as IOServer, Socket } from 'socket.io'
 import { GameEngine, PlayerId, ActionType } from '@shadow-hunters/shared'
 import { prisma } from './index.js'
-import { getSocketPlayer, getSocketSession } from './auth.js'
+import { saveGameState } from './game.js'
 
 const BOT_THINK_MS = 1500
 
@@ -16,10 +16,6 @@ export function setupBotHandling(io: IOServer, games: Map<string, GameEngine>) {
       const player = engine.state.players.get(turnPlayerId)
       if (!player || !player.isBot) continue
 
-      // Le bot a déjà joué ou est en train de jouer : on skip
-      const socketId = player.socketId
-      if (!socketId) continue
-
       try {
         await playBotTurn(io, engine, player)
       } catch (err) {
@@ -31,7 +27,8 @@ export function setupBotHandling(io: IOServer, games: Map<string, GameEngine>) {
 
 async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId; state: string; location: string | null; isBot: boolean }) {
   const { canExecute } = engine
-  const room = `game:${engine.state.id.replace('game_', '')}`
+  const lobbyId = engine.state.id.replace('game_', '')
+  const room = `game:${lobbyId}`
 
   if (bot.state === 'hidden' && Math.random() < 0.3) {
     if (canExecute(bot.id, ActionType.Reveal)) {
@@ -89,6 +86,7 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
 
     if (canExecute(bot.id, ActionType.EndTurn)) {
       engine.endTurn(bot.id)
+      await saveGameState(lobbyId, engine)
       io.to(room).emit('game:state', { public: engine.getPublicView() })
     }
   }

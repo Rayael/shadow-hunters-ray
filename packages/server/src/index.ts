@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'crypto'
 import { createServer } from 'http'
-import express from 'express'
+import express, { Request, Response } from 'express'
 import { Server as IOServer, Socket } from 'socket.io'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
@@ -26,6 +26,10 @@ const LOBBY_PASSWORD = process.env.LOBBY_PASSWORD || 'EDGAR'
 const SESSION_SECRET = process.env.SESSION_SECRET || 'changez-moi'
 const PUBLIC_URL = process.env.PUBLIC_URL || ''
 const NODE_ENV = process.env.NODE_ENV || 'development'
+
+function hashPassword(pw: string): string {
+  return createHash('sha256').update(pw).digest('hex')
+}
 
 const app = express()
 const httpServer = createServer(app)
@@ -81,7 +85,7 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
   let lobby = await prisma.lobby.findFirst()
   if (!lobby) {
     lobby = await prisma.lobby.create({
-      data: { status: 'LOBBY', passwordHash: LOBBY_PASSWORD },
+      data: { status: 'LOBBY', passwordHash: hashPassword(LOBBY_PASSWORD) },
     })
   }
 
@@ -147,7 +151,7 @@ app.get('/api/lobby', async (_req: Request, res: Response) => {
   if (!lobby) return res.status(404).json({ error: 'Lobby introuvable' })
   res.json({
     id: lobby.id, status: lobby.status, hostId: lobby.hostId,
-    players: lobby.players.map((p) => ({
+    players: lobby.players.map((p: { id: string; userId: string; displayName: string; number: number; color: string; isHost: boolean; isBot: boolean }) => ({
       id: p.id, userId: p.userId, displayName: p.displayName,
       number: p.number, color: p.color, isHost: p.isHost, isBot: p.isBot,
     })),

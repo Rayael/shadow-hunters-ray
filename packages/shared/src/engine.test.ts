@@ -76,15 +76,10 @@ describe('GameEngine - actions', () => {
   it('gère les dégâts et la mort', () => {
     const engine = GameEngine.createGame('g1', makePlayers(4))
     engine.assignCharacters()
-    const tp = engine.state.turnPlayerId!
-    const target = engine.state.turnOrder.find((id) => id !== tp)!
+    const target = engine.state.turnOrder.find((id) => id !== engine.state.turnPlayerId!)!
     engine.state.players.get(target)!.damage = 9
     engine.state.players.get(target)!.maxDamage = 10
-    engine.state.players.get(tp)!.location = 'zone1' as any
-    engine.state.players.get(target)!.location = 'zone1' as any
-    engine.state.availableActions = [ActionType.AttackPlayer]
-    engine.state.phase = Phase.Attack
-    engine.attackPlayer(tp, target)
+    engine.applyDamage(target, 1)
     expect(engine.state.players.get(target)!.state).toBe(PlayerState.Dead)
   })
 
