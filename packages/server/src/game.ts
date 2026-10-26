@@ -163,7 +163,9 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
       switch (data.type) {
         case 'roll_die': result = engine.rollDie(actorId); break
         case 'choose_area': result = engine.chooseArea(actorId, data.payload.areaId); break
-        case 'use_area_action': result = engine.useAreaAction(actorId); break
+        case 'use_area_action': result = engine.useAreaAction(actorId, data.payload.targetId); break
+        case 'use_card': result = engine.useCard(actorId, data.payload.cardId, data.payload.targetId); break
+        case 'use_special': result = engine.useSpecial(actorId, data.payload.targetId); break
         case 'decline_area_action': result = engine.declineAreaAction(actorId); break
         case 'attack_player': result = engine.attackPlayer(actorId, data.payload.targetId); break
         case 'decline_attack': result = engine.declineAttack(actorId); break

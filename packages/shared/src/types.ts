@@ -108,25 +108,7 @@ export interface GameConfig {
 }
 
 export interface GameEvent {
-  type:
-    | 'message'
-    | 'join'
-    | 'leave'
-    | 'roll'
-    | 'move'
-    | 'area_action'
-    | 'attack'
-    | 'damage'
-    | 'heal'
-    | 'reveal'
-    | 'death'
-    | 'win'
-    | 'card_drawn'
-    | 'card_used'
-    | 'equipment_stolen'
-    | 'turn_start'
-    | 'turn_end'
-    | 'error'
+  type: string
   timestamp: number
   actor?: PlayerId
   target?: PlayerId
@@ -215,7 +197,7 @@ export interface AreaRecord {
   description: string
   domain: number[]
   resourceId: string
-  action: (state: GameState, player: PlayerRecord) => SpecialResult
+  action: (state: GameState, player: PlayerRecord, targetId?: PlayerId) => SpecialResult
 }
 
 export interface PlayerPublicView {

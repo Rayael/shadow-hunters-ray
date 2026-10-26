@@ -1,7 +1,7 @@
 import {
   ActionType, AreaId, AreaRecord, AreaView, CardId, CardRecord, CardType, CharacterId,
   GameEvent, GameState, GameView, PlayerId, PlayerPrivateView,
-  PlayerPublicView, PlayerRecord, Phase, PlayerState,
+  PlayerPublicView, PlayerRecord, Phase, PlayerState, SpecialContext,
 } from './types.js'
 import { CHARACTERS, getDefaultCharacterPool } from './characters.js'
 import { getAllCards } from './cards.js'
@@ -267,7 +267,7 @@ export class GameEngine {
     player.location = areaId
   }
 
-  useAreaAction(actorId: PlayerId): { events: GameEvent[] } {
+  useAreaAction(actorId: PlayerId, targetId?: PlayerId): { events: GameEvent[] } {
     if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
     const player = this.state.players.get(actorId)
     if (!player || !player.location) throw new Error('Vous n\'êtes sur aucun lieu')
@@ -275,15 +275,65 @@ export class GameEngine {
     if (!area) throw new Error('Lieu inconnu')
     this.state.phase = Phase.AreaAction
     this.state.availableActions = []
-    const result = area.action(this.state, player)
+    const result = area.action(this.state, player, targetId)
     const events: GameEvent[] = result.events ?? []
     if (result.message) {
       events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: result.message } })
     }
-    events.push({ type: 'area_action', timestamp: now(), actor: actorId, data: { areaId: area.id, areaName: area.name } })
+    events.push({ type: 'area_action', timestamp: now(), actor: actorId, target: targetId, data: { areaId: area.id, areaName: area.name } })
     this.state.eventLog.push(...events)
-    this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn]
+    this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]
     this.state.phase = Phase.Attack
+    return { events }
+  }
+
+  useCard(actorId: PlayerId, cardId: CardId, targetId?: PlayerId): { events: GameEvent[] } {
+    const player = this.state.players.get(actorId)
+    if (!player) throw new Error('Joueur introuvable')
+    if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
+    if (!player.equipment.includes(cardId)) throw new Error('Vous ne possédez pas cette carte')
+    const card = this.findCard(cardId)
+    if (!card) throw new Error('Carte introuvable')
+    if (!card.use) throw new Error('Cette carte ne peut pas être utilisée')
+    const target = targetId ? this.state.players.get(targetId) : undefined
+    const result = card.use(this.state, player, target)
+    if (!result.success) throw new Error(result.message || 'Échec de l\'utilisation de la carte')
+    if (!card.isEquipment) {
+      player.equipment = player.equipment.filter((cid) => cid !== cardId)
+      this.state.cardsDiscard[card.type].push(card)
+    }
+    const events: GameEvent[] = result.events ?? []
+    if (result.message) {
+      events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: result.message } })
+    }
+    events.push({ type: 'card_used', timestamp: now(), actor: actorId, target: targetId, data: { card: card.title, type: card.type } })
+    this.state.eventLog.push(...events)
+    this.checkWinConditions()
+    this.state.availableActions = [ActionType.EndTurn]
+    this.state.phase = Phase.TurnEnd
+    return { events }
+  }
+
+  useSpecial(actorId: PlayerId, targetId?: PlayerId): { events: GameEvent[] } {
+    const player = this.state.players.get(actorId)
+    if (!player) throw new Error('Joueur introuvable')
+    if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
+    const cid = this.state.characterAssignments.get(actorId)
+    if (!cid) throw new Error('Vous n\'avez pas de personnage attribué')
+    const character = this.state.charactersPool.find((c) => c.id === cid)
+    if (!character) throw new Error('Personnage introuvable')
+    const context: SpecialContext = { type: 'now', target: targetId }
+    const result = character.special(this.state, player, context)
+    if (!result.success) throw new Error(result.message || 'La capacité spéciale ne peut pas être utilisée maintenant')
+    const events: GameEvent[] = result.events ?? []
+    if (result.message) {
+      events.push({ type: 'message', timestamp: now(), actor: actorId, target: targetId, data: { text: result.message } })
+    }
+    events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: `${player.name} utilise sa capacité spéciale.` } })
+    this.state.eventLog.push(...events)
+    this.checkWinConditions()
+    this.state.availableActions = [ActionType.EndTurn]
+    this.state.phase = Phase.TurnEnd
     return { events }
   }
 
@@ -491,11 +541,28 @@ export class GameEngine {
     return this.state.availableActions.includes(action)
   }
 
+  private triggerStartSpecials(actorId: PlayerId): void {
+    const player = this.state.players.get(actorId)
+    if (!player) return
+    const cid = this.state.characterAssignments.get(actorId)
+    if (!cid) return
+    const character = this.state.charactersPool.find((c) => c.id === cid)
+    if (!character || character.specialUsed) return
+    const context: SpecialContext = { type: 'start', target: undefined }
+    const result = character.special(this.state, player, context)
+    if (result.success && result.events) {
+      this.state.eventLog.push(...result.events)
+      if (result.events.some((e) => e.type === 'damage' || e.type === 'death')) {
+        this.checkWinConditions()
+      }
+    }
+  }
+
   private setAvailableActions(): void {
     const tp = this.state.turnPlayerId
     if (!tp) { this.state.availableActions = []; return }
     switch (this.state.phase) {
-      case Phase.TurnStart: this.state.availableActions = [ActionType.RollDie]; break
+      case Phase.TurnStart: this.triggerStartSpecials(tp); this.state.availableActions = [ActionType.RollDie]; break
       case Phase.Movement:
         this.state.availableActions = this.state.currentRoll === 7
           ? [ActionType.ChooseArea]
