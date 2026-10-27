@@ -17,7 +17,7 @@
     "prisma:generate": "cd packages/server && npx prisma generate",
     "prisma:migrate:dev": "cd packages/server && npx prisma migrate dev",
     "prisma:migrate:deploy": "cd packages/server && npx prisma migrate deploy",
-    "server:build": "cd packages/server && npx -p typescript tsc && npx prisma generate",
+    "server:build": "cd packages/server && npx prisma generate && npx -p typescript tsc",
     "client:build": "cd packages/client && npm run build",
     "build": "npm run shared:build && npm run server:build && npm run client:build",
     "server:dev": "npm run shared:build && cd packages/server && npm run dev",
