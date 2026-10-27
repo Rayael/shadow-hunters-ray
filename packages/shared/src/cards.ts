@@ -83,7 +83,7 @@ export const WHITE_CARDS: CardRecord[] = [
         success: true,
         message: target.name + ' est force de reveler son identite : ' + ch.name + '.',
         events: [
-          { type: 'reveal', timestamp: Date.now(), actor: player.id, target: target.id, data: { player: target.id, character: ch.name } },
+          { type: 'reveal', timestamp: Date.now(), actor: player.id, target: target.id, data: { target: target.id, character: ch.name } },
         ],
       }
     },
@@ -124,7 +124,7 @@ export const BLACK_CARDS: CardRecord[] = [
       if (target.damage >= target.maxDamage) {
         target.state = PlayerState.Dead
         target.location = null
-        events.push({ type: 'death', timestamp: Date.now(), actor: player.id, target: target.id, data: { player: target.id, attacker: player.id } })
+        events.push({ type: 'death', timestamp: Date.now(), actor: player.id, target: target.id, data: { target: target.id, amount: 2, attacker: player.id } })
       }
       return { success: true, message: '2 degats infliges a ' + target.name + '.', events }
     },
@@ -172,7 +172,7 @@ export const BLACK_CARDS: CardRecord[] = [
       if (target.damage >= target.maxDamage) {
         target.state = PlayerState.Dead
         target.location = null
-        events.push({ type: 'death', timestamp: Date.now(), actor: player.id, target: target.id, data: { player: target.id, attacker: player.id } })
+        events.push({ type: 'death', timestamp: Date.now(), actor: player.id, target: target.id, data: { target: target.id, amount: 2, attacker: player.id } })
       }
       return { success: true, message: '1 degat inflige a ' + target.name + '.', events }
     },
@@ -198,3 +198,8 @@ export function getDeckByType(type: CardType): CardRecord[] {
     case CardType.Hermit: return [...HERMIT_CARDS].map((c) => ({ ...c, holder: null }))
   }
 }
+
+
+
+
+

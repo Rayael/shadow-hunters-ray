@@ -52,7 +52,7 @@ function bobWinCondition(_state: GameState, player: PlayerRecord): boolean {
 }
 
 function catherineWinCondition(_state: GameState, player: PlayerRecord): boolean {
-  return player.state === PlayerState.Dead || player.state !== PlayerState.Dead
+  return player.state !== PlayerState.Dead
 }
 
 /* ============================================================
@@ -367,4 +367,5 @@ export function getCharactersByAllegiance(alleg: Allegiance): CharacterRecord[] 
 export function getDefaultCharacterPool(): CharacterRecord[] {
   return CHARACTERS.map((c) => ({ ...c, specialUsed: false }))
 }
+
 
