@@ -1,4 +1,4 @@
-# This Dockerfile is optional: if Railway still caches weird behavior, you can switch the service to deploy from Docker and the build will be fully deterministic.
+# This Dockerfile is optional: if Render still caches weird behavior, you can switch the service to deploy from Docker and the build will be fully deterministic.
 FROM python:3.10-slim
 
 # Prevent Python from writing .pyc files and buffering stdout/stderr
