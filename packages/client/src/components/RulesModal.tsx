@@ -34,7 +34,7 @@ export default function RulesModal({ onClose }: { onClose: () => void }) {
             <h3>Conditions de victoire</h3>
             <ul>
               <li>Chasseurs : toutes les Ombres mortes.</li>
-              <li>Ombres : tous les Chasseurs morts.</li>
+              <li>Ombres : tous les Chasseurs morts ou 3 Neutres sont morts.</li>
               <li>Neutres : objectif personnel selon le personnage.</li>
             </ul>
           </section>

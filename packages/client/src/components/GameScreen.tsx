@@ -173,6 +173,31 @@ export default function GameScreen({
             ) : (
               <div>Chargement du personnage…</div>
             )}
+          {privateView?.hand?.length > 0 && (
+            <div className="hand-cards">
+              <h3>Cartes en main</h3>
+              {privateView.hand.map((c: any) => (
+                <div key={c.id} className="hand-card">
+                  <span
+                    className="card-link"
+                    onMouseEnter={() => setHoveredCard(allCards.find((x: any) => x.id === c.id) || c)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                  >
+                    {c.emoji || (c.type === 'white' ? '?' : c.type === 'black' ? '?' : '??')} {c.title}
+                  </span>
+                  <button onClick={() => onAction({ type: 'use_card', payload: { cardId: c.id, targetId: selectedTarget || undefined } })}>
+                    Utiliser
+                  </button>
+                </div>
+              ))}
+              <select value={selectedTarget} onChange={(e) => setSelectedTarget(e.target.value)}>
+                <option value="">(cible optionnelle)</option>
+                {publicState?.players?.filter((p: any) => p.id !== player.userId && p.state !== 'dead').map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.name || p.id}</option>
+                ))}
+              </select>
+            </div>
+          )}
           </div>
           {isMyTurn && (
             <div className="actions-panel">

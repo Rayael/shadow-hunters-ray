@@ -1,4 +1,4 @@
-﻿import {
+import {
   AreaId,
   AreaRecord,
   CardType,
@@ -21,9 +21,14 @@ function drawCardAction(state: GameState, player: PlayerRecord, cardType: CardTy
     state.cardsDiscard[cardType] = []
   }
   const card = deck.pop()!
-  card.holder = player.id
-  if (!player.equipment.includes(card.id)) {
-    player.equipment.push(card.id)
+  if (card.isEquipment) {
+    if (!player.equipment.includes(card.id)) {
+      player.equipment.push(card.id)
+    }
+  } else {
+    if (!player.hand.includes(card.id)) {
+      player.hand.push(card.id)
+    }
   }
   return {
     success: true,

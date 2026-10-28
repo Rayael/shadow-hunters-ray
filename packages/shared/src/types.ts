@@ -149,6 +149,7 @@ export interface PlayerRecord {
   socketId: string | null
   location: AreaId | null
   equipment: CardId[]
+  hand: CardId[]
   specialActive: boolean
   characterId: CharacterId | null
   delexicalization: number
@@ -186,6 +187,7 @@ export interface CardRecord {
   type: CardType
   description: string
   isEquipment: boolean
+  emoji?: string
   holder: PlayerId | null
   resourceId: string
   use?: (state: GameState, player: PlayerRecord, target?: PlayerRecord) => SpecialResult

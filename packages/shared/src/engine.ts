@@ -1,4 +1,4 @@
-﻿import {
+import {
   ActionType, AreaId, AreaRecord, AreaView, CardId, CardRecord, CardType, CharacterId,
   GameEvent, GameState, GameView, PlayerId, PlayerPrivateView,
   PlayerPublicView, PlayerRecord, Phase, PlayerState, SpecialContext,
@@ -41,7 +41,7 @@ export class GameEngine {
   ): GameEngine {
     const playerCount = players.length
     if (playerCount < 4 || playerCount > 8) {
-      throw new Error(`Nombre de joueurs invalide : ${playerCount} (doit Ãªtre entre 4 et 8)`)
+      throw new Error(`Nombre de joueurs invalide : ${playerCount} (doit être entre 4 et 8)`)
     }
     const factionCounts = FACTION_COUNTS[playerCount]
     if (!factionCounts) {
@@ -53,7 +53,7 @@ export class GameEngine {
       playersMap.set(p.id, {
         id: p.id, number: p.number, name: p.name, color: p.color,
         state: PlayerState.Hidden, damage: 0, maxDamage: 10, isBot: p.isBot,
-        socketId: null, location: null, equipment: [], specialActive: false,
+        socketId: null, location: null, equipment: [], hand: [], specialActive: false,
         characterId: null, delexicalization: i,
       })
     })
@@ -72,7 +72,7 @@ export class GameEngine {
       cardsDeck: { white: whiteDeck, black: blackDeck, hermit: hermitDeck },
       cardsDiscard: { white: [], black: [], hermit: [] },
       areas: areasMap, currentRoll: null, availableActions: [],
-      eventLog: [{ type: 'message', timestamp: now(), data: { text: 'Partie crÃ©Ã©e.' } }],
+      eventLog: [{ type: 'message', timestamp: now(), data: { text: 'Partie créée.' } }],
       gameOver: false, winners: [],
       config: { playerCount, botCount: players.filter((p) => p.isBot).length, factionCounts },
       characterAssignments: new Map(), specialsUsed: new Set(),
@@ -106,7 +106,7 @@ export class GameEngine {
         equipment: p.equipment.map((cid) => {
           const card = this.findCard(cid)
           return card
-            ? { id: card.id, title: card.title, type: card.type, description: card.description, isEquipment: card.isEquipment, holder: card.holder }
+            ? { id: card.id, title: card.title, type: card.type, description: card.description, isEquipment: card.isEquipment, holder: card.holder, emoji: card.emoji }
             : { id: cid, title: 'Inconnu', type: CardType.White, description: '', isEquipment: false, holder: null }
         }),
         specialActive: p.specialActive, character,
@@ -154,13 +154,19 @@ export class GameEngine {
         }
       }
     }
-    const hand = p.equipment.map((cid) => {
+    const hand = p.hand.map((cid) => {
       const card = this.findCard(cid)
       return card
-        ? { id: card.id, title: card.title, type: card.type, description: card.description, isEquipment: card.isEquipment, holder: card.holder }
+        ? { id: card.id, title: card.title, type: card.type, description: card.description, isEquipment: card.isEquipment, holder: card.holder, emoji: card.emoji }
         : { id: cid, title: 'Inconnu', type: CardType.White, description: '', isEquipment: false, holder: null }
     })
-    return { character, hand, fullEquipment: hand }
+    const equipment = p.equipment.map((cid) => {
+      const card = this.findCard(cid)
+      return card
+        ? { id: card.id, title: card.title, type: card.type, description: card.description, isEquipment: card.isEquipment, holder: card.holder, emoji: card.emoji }
+        : { id: cid, title: 'Inconnu', type: CardType.White, description: '', isEquipment: false, holder: null }
+    })
+    return { character, hand, fullEquipment: equipment }
   }
 
   getFullView(): GameState { return this.state }
@@ -211,7 +217,7 @@ export class GameEngine {
     this.state.turnPlayerIndex = 0
     this.state.turnPlayerId = this.state.turnOrder[0]
     const events: GameEvent[] = [
-      { type: 'message', timestamp: now(), data: { text: 'Personnages attribuÃ©s. La partie commence.' } },
+      { type: 'message', timestamp: now(), data: { text: 'Personnages attribués. La partie commence.' } },
       { type: 'turn_start', timestamp: now(), actor: this.state.turnPlayerId, data: { turnPlayerId: this.state.turnPlayerId } },
     ]
     this.state.eventLog.push(...events)
@@ -221,7 +227,7 @@ export class GameEngine {
 
   rollDie(actorId: PlayerId): { roll: number; events: GameEvent[] } {
     if (this.state.phase !== Phase.TurnStart && this.state.phase !== Phase.Movement) {
-      throw new Error('Le lancer de dÃ© n\'est pas autorisÃ© Ã  cette phase')
+      throw new Error('Le lancer de dé n\'est pas autorisé à cette phase')
     }
     if (this.state.turnPlayerId !== actorId) {
       throw new Error('Ce n\'est pas votre tour')
@@ -247,7 +253,7 @@ export class GameEngine {
 
   chooseArea(actorId: PlayerId, areaId: AreaId): { events: GameEvent[] } {
     if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
-    if (this.state.currentRoll !== 7) throw new Error('Le choix de zone n\'est autorisÃ© qu\'aprÃ¨s un lancer de 7')
+    if (this.state.currentRoll !== 7) throw new Error('Le choix de zone n\'est autorisé qu\'après un lancer de 7')
     const area = this.state.areas.get(areaId)
     if (!area) throw new Error('Zone inconnue')
     this.movePlayer(actorId, areaId)
@@ -255,7 +261,7 @@ export class GameEngine {
     this.state.availableActions = [ActionType.UseAreaAction, ActionType.DeclineAreaAction, ActionType.EndTurn]
     const events: GameEvent[] = [
       { type: 'move', timestamp: now(), actor: actorId, data: { playerId: actorId, areaId: area.id } },
-      { type: 'message', timestamp: now(), actor: actorId, data: { text: `DÃ©placement vers ${area.name}.` } },
+      { type: 'message', timestamp: now(), actor: actorId, data: { text: `Déplacement vers ${area.name}.` } },
     ]
     this.state.eventLog.push(...events)
     return { events }
@@ -270,7 +276,7 @@ export class GameEngine {
   useAreaAction(actorId: PlayerId, targetId?: PlayerId): { events: GameEvent[] } {
     if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
     const player = this.state.players.get(actorId)
-    if (!player || !player.location) throw new Error('Vous n\'Ãªtes sur aucun lieu')
+    if (!player || !player.location) throw new Error('Vous n\'êtes sur aucun lieu')
     const area = this.state.areas.get(player.location)
     if (!area) throw new Error('Lieu inconnu')
     this.state.phase = Phase.AreaAction
@@ -291,15 +297,16 @@ export class GameEngine {
     const player = this.state.players.get(actorId)
     if (!player) throw new Error('Joueur introuvable')
     if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
-    if (!player.equipment.includes(cardId)) throw new Error('Vous ne possÃ©dez pas cette carte')
+    if (!player.equipment.includes(cardId) && !player.hand.includes(cardId)) throw new Error('Vous ne possedez pas cette carte')
     const card = this.findCard(cardId)
     if (!card) throw new Error('Carte introuvable')
-    if (!card.use) throw new Error('Cette carte ne peut pas Ãªtre utilisÃ©e')
+    if (!card.use) throw new Error('Cette carte ne peut pas être utilisée')
     const target = targetId ? this.state.players.get(targetId) : undefined
     const result = card.use(this.state, player, target)
-    if (!result.success) throw new Error(result.message || 'Ã‰chec de l\'utilisation de la carte')
+    if (!result.success) throw new Error(result.message || 'Échec de l\'utilisation de la carte')
     if (!card.isEquipment) {
       player.equipment = player.equipment.filter((cid) => cid !== cardId)
+      player.hand = player.hand.filter((cid) => cid !== cardId)
       this.state.cardsDiscard[card.type].push(card)
     }
     const events: GameEvent[] = result.events ?? []
@@ -319,17 +326,17 @@ export class GameEngine {
     if (!player) throw new Error('Joueur introuvable')
     if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
     const cid = this.state.characterAssignments.get(actorId)
-    if (!cid) throw new Error('Vous n\'avez pas de personnage attribuÃ©')
+    if (!cid) throw new Error('Vous n\'avez pas de personnage attribué')
     const character = this.state.charactersPool.find((c) => c.id === cid)
     if (!character) throw new Error('Personnage introuvable')
     const context: SpecialContext = { type: 'now', target: targetId }
     const result = character.special(this.state, player, context)
-    if (!result.success) throw new Error(result.message || 'La capacitÃ© spÃ©ciale ne peut pas Ãªtre utilisÃ©e maintenant')
+    if (!result.success) throw new Error(result.message || 'La capacité spéciale ne peut pas être utilisée maintenant')
     const events: GameEvent[] = result.events ?? []
     if (result.message) {
       events.push({ type: 'message', timestamp: now(), actor: actorId, target: targetId, data: { text: result.message } })
     }
-    events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: `${player.name} utilise sa capacitÃ© spÃ©ciale.` } })
+    events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: `${player.name} utilise sa capacité spéciale.` } })
     this.state.eventLog.push(...events)
     this.checkWinConditions()
     this.state.availableActions = [ActionType.EndTurn]
@@ -342,7 +349,7 @@ export class GameEngine {
     this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn]
     this.state.phase = Phase.Attack
     const events: GameEvent[] = [
-      { type: 'message', timestamp: now(), actor: actorId, data: { text: 'Action de lieu refusÃ©e.' } },
+      { type: 'message', timestamp: now(), actor: actorId, data: { text: 'Action de lieu refusée.' } },
     ]
     this.state.eventLog.push(...events)
     return { events }
@@ -354,8 +361,8 @@ export class GameEngine {
     const actor = this.state.players.get(actorId)
     const target = this.state.players.get(targetId)
     if (!actor || !target) throw new Error('Joueur introuvable')
-    if (target.state === PlayerState.Dead) throw new Error('Le joueur cible est dÃ©jÃ  mort')
-    if (actor.location !== target.location) throw new Error('Vous devez Ãªtre sur le mÃªme lieu pour attaquer')
+    if (target.state === PlayerState.Dead) throw new Error('Le joueur cible est déjà mort')
+    if (actor.location !== target.location) throw new Error('Vous devez être sur le même lieu pour attaquer')
     const dieSides = 4
     const roll = Math.floor(Math.random() * dieSides) + 1
     const damage = roll >= 4 ? 1 : 0
@@ -367,7 +374,7 @@ export class GameEngine {
       this.applyDamage(targetId, damage, actorId)
       events.push({ type: 'damage', timestamp: now(), actor: actorId, target: targetId, data: { target: targetId, amount: damage, attacker: actorId } })
     } else {
-      events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: 'L\'attaque a Ã©chouÃ© (dÃ©gÃ¢ts : 0).' } })
+      events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: 'L\'attaque a échoué (dégâts : 0).' } })
     }
     this.checkWinConditions()
     this.state.availableActions = [ActionType.EndTurn]
@@ -381,7 +388,7 @@ export class GameEngine {
     this.state.availableActions = [ActionType.EndTurn]
     this.state.phase = Phase.TurnEnd
     const events: GameEvent[] = [
-      { type: 'message', timestamp: now(), actor: actorId, data: { text: 'Attaque refusÃ©e.' } },
+      { type: 'message', timestamp: now(), actor: actorId, data: { text: 'Attaque refusée.' } },
     ]
     this.state.eventLog.push(...events)
     return { events }
@@ -455,14 +462,14 @@ export class GameEngine {
   revealCharacter(actorId: PlayerId): { events: GameEvent[] } {
     const player = this.state.players.get(actorId)
     if (!player) throw new Error('Joueur introuvable')
-    if (player.state === PlayerState.Dead) throw new Error('Un joueur mort ne peut pas se rÃ©vÃ©ler')
-    if (player.state === PlayerState.Revealed) throw new Error('Vous Ãªtes dÃ©jÃ  rÃ©vÃ©lÃ©')
+    if (player.state === PlayerState.Dead) throw new Error('Un joueur mort ne peut pas se révéler')
+    if (player.state === PlayerState.Revealed) throw new Error('Vous êtes déjà révélé')
     player.state = PlayerState.Revealed
     const characterId = this.state.characterAssignments.get(actorId)
     const character = characterId ? this.state.charactersPool.find((c) => c.id === characterId) : null
     const events: GameEvent[] = [
       { type: 'reveal', timestamp: now(), actor: actorId, data: { player: actorId, character: character?.name ?? null } },
-      { type: 'message', timestamp: now(), data: { text: `${player.name} a rÃ©vÃ©lÃ© son identitÃ© : ${character?.name ?? '?'}.` } },
+      { type: 'message', timestamp: now(), data: { text: `${player.name} a révélé son identité : ${character?.name ?? '?'}.` } },
     ]
     this.state.eventLog.push(...events)
     this.checkWinConditions()
