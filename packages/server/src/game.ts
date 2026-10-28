@@ -25,6 +25,21 @@ export async function saveGameState(lobbyId: string, engine: GameEngine) {
   }
 }
 
+export async function broadcastGameState(io: IOServer, engine: GameEngine, lobbyId: string) {
+  const sessions = await prisma.session.findMany({
+    where: { lobbyId, connected: true },
+    include: { player: true },
+  })
+  for (const s of sessions) {
+    if (!s.socketId) continue
+    const pid = (s.player?.userId ?? null) as PlayerId | null
+    io.to(s.socketId).emit('game:state', { public: engine.getPublicView(pid) })
+    if (pid) {
+      const pv = engine.getPrivateView(pid)
+      if (pv) io.to(s.socketId).emit('game:private', { private: pv })
+    }
+  }
+}
 export function handleGameEvents(io: IOServer, socket: Socket) {
   const player = getSocketPlayer(socket)
   const session = getSocketSession(socket)
@@ -127,26 +142,14 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     engine.assignCharacters()
     await saveState(engine)
 
-    const publicView = engine.getPublicView()
-    io.to(`game:${session.lobbyId}`).emit('game:state', { public: publicView })
-    io.to(`lobby:${session.lobbyId}`).emit('game:state', { public: publicView })
-
-    for (const lp of allPlayers) {
-      const privateView = engine.getPrivateView(lp.userId as PlayerId)
-      const s = await prisma.session.findFirst({
-        where: { playerId: lp.id, connected: true },
-      })
-      if (s?.socketId && privateView) {
-        io.to(s.socketId).emit('game:private', { private: privateView })
-      }
-    }
+    await broadcastGameState(io, engine, session.lobbyId)
 
     io.to(`game:${session.lobbyId}`).emit('game:log', {
       type: 'message', text: 'La partie a commencé !',
     })
   })
 
-  socket.on('game:action', (data: { type: string; payload: any }) => {
+  socket.on('game:action', async (data: { type: string; payload: any }) => {
     const engine = getEngine()
     if (!engine) {
       socket.emit('game:error', { error: 'Aucune partie en cours' })
@@ -180,8 +183,7 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
 
       saveState(engine)
 
-      const publicView = engine.getPublicView()
-      io.to(`game:${session.lobbyId}`).emit('game:state', { public: publicView })
+      await broadcastGameState(io, engine, session.lobbyId)
 
       if (result.events && result.events.length > 0) {
         io.to(`game:${session.lobbyId}`).emit('game:events', { events: result.events })

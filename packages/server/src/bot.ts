@@ -1,7 +1,7 @@
 import { Server as IOServer, Socket } from 'socket.io'
 import { GameEngine, PlayerId, ActionType } from '@shadow-hunters/shared'
 import { prisma } from './index.js'
-import { saveGameState } from './game.js'
+import { saveGameState, broadcastGameState } from './game.js'
 
 const BOT_THINK_MS = 1500
 
@@ -26,44 +26,43 @@ export function setupBotHandling(io: IOServer, games: Map<string, GameEngine>) {
 }
 
 async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId; state: string; location: string | null; isBot: boolean }) {
-  const { canExecute } = engine
   const lobbyId = engine.state.id.replace('game_', '')
   const room = `game:${lobbyId}`
 
   if (bot.state === 'hidden' && Math.random() < 0.3) {
-    if (canExecute(bot.id, ActionType.Reveal)) {
+    if (engine.canExecute(bot.id, ActionType.Reveal)) {
       engine.revealCharacter(bot.id)
-      io.to(room).emit('game:state', { public: engine.getPublicView() })
+      await broadcastGameState(io, engine, lobbyId)
     }
   }
 
-  if (canExecute(bot.id, ActionType.RollDie)) {
+  if (engine.canExecute(bot.id, ActionType.RollDie)) {
     const { roll } = engine.rollDie(bot.id)
-    io.to(room).emit('game:state', { public: engine.getPublicView() })
+    await broadcastGameState(io, engine, lobbyId)
     io.to(room).emit('game:events', { events: [{ type: 'roll', timestamp: Date.now(), actor: bot.id, data: { roll } }] })
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    if (roll === 7 && canExecute(bot.id, ActionType.ChooseArea)) {
+    if (roll === 7 && engine.canExecute(bot.id, ActionType.ChooseArea)) {
       const areas = Array.from(engine.state.areas.keys())
       const areaId = areas[Math.floor(Math.random() * areas.length)]
       engine.chooseArea(bot.id, areaId)
-      io.to(room).emit('game:state', { public: engine.getPublicView() })
+      await broadcastGameState(io, engine, lobbyId)
     }
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    if (canExecute(bot.id, ActionType.UseAreaAction)) {
+    if (engine.canExecute(bot.id, ActionType.UseAreaAction)) {
       engine.useAreaAction(bot.id)
-      io.to(room).emit('game:state', { public: engine.getPublicView() })
-    } else if (canExecute(bot.id, ActionType.DeclineAreaAction)) {
+      await broadcastGameState(io, engine, lobbyId)
+    } else if (engine.canExecute(bot.id, ActionType.DeclineAreaAction)) {
       engine.declineAreaAction(bot.id)
-      io.to(room).emit('game:state', { public: engine.getPublicView() })
+      await broadcastGameState(io, engine, lobbyId)
     }
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    if (canExecute(bot.id, ActionType.AttackPlayer)) {
+    if (engine.canExecute(bot.id, ActionType.AttackPlayer)) {
       const botPlayer = engine.state.players.get(bot.id)
       const allPlayers = Array.from(engine.state.players.values())
       const targets = allPlayers.filter(
@@ -72,22 +71,22 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
       if (targets.length > 0) {
         const target = targets[Math.floor(Math.random() * targets.length)]
         engine.attackPlayer(bot.id, target.id)
-        io.to(room).emit('game:state', { public: engine.getPublicView() })
+        await broadcastGameState(io, engine, lobbyId)
       } else {
         engine.declineAttack(bot.id)
-        io.to(room).emit('game:state', { public: engine.getPublicView() })
+        await broadcastGameState(io, engine, lobbyId)
       }
-    } else if (canExecute(bot.id, ActionType.DeclineAttack)) {
+    } else if (engine.canExecute(bot.id, ActionType.DeclineAttack)) {
       engine.declineAttack(bot.id)
-      io.to(room).emit('game:state', { public: engine.getPublicView() })
+      await broadcastGameState(io, engine, lobbyId)
     }
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    if (canExecute(bot.id, ActionType.EndTurn)) {
+    if (engine.canExecute(bot.id, ActionType.EndTurn)) {
       engine.endTurn(bot.id)
       await saveGameState(lobbyId, engine)
-      io.to(room).emit('game:state', { public: engine.getPublicView() })
+      await broadcastGameState(io, engine, lobbyId)
     }
   }
 }
