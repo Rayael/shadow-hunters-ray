@@ -232,10 +232,18 @@ export class GameEngine {
     if (this.state.turnPlayerId !== actorId) {
       throw new Error('Ce n\'est pas votre tour')
     }
-    const roll = (Math.floor(Math.random() * 4) + 1) + (Math.floor(Math.random() * 6) + 1)
+    const player = this.state.players.get(actorId)
+    if (!player) throw new Error('Joueur introuvable')
+
+    let roll = 0
+    let area: AreaRecord | undefined
+    do {
+      roll = (Math.floor(Math.random() * 4) + 1) + (Math.floor(Math.random() * 6) + 1)
+      area = areaForRoll(roll)
+    } while (roll !== 7 && area && player.location && area.id === player.location)
+
     this.state.currentRoll = roll
     this.state.phase = Phase.Movement
-    const area = areaForRoll(roll)
     const events: GameEvent[] = [
       { type: 'roll', timestamp: now(), actor: actorId, data: { roll, area: area?.name ?? null } },
     ]

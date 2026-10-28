@@ -120,15 +120,17 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
     const toCreate = totalPlayers - lobbyPlayers.length
     if (toCreate > 0) {
       const colors = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
+      const botNames = ['Bernard le coquin', 'Skull Kingounet', 'Sarkozy', 'Bismillah', 'Kaèr Ache !', 'Macron', 'Michel Forever', 'Gertrude']
       for (let i = 0; i < toCreate; i++) {
-        const botNum = lobbyPlayers.length + i + 1
+        const playerNum = lobbyPlayers.length + i + 1
+        const botIdx = lobbyPlayers.filter((lp: any) => lp.isBot).length + i + 1
         await prisma.lobbyPlayer.create({
           data: {
             lobbyId: session.lobbyId,
-            userId: `cpu_${botNum}`,
-            displayName: `CPU_${botNum}`,
-            number: botNum,
-            color: colors[botNum - 1] ?? '#FFFFFF',
+            userId: `cpu_${playerNum}`,
+            displayName: botNames[botIdx - 1] ?? `CPU_${botIdx}`,
+            number: playerNum,
+            color: colors[playerNum - 1] ?? '#FFFFFF',
             isBot: true,
           },
         })

@@ -52,7 +52,7 @@ export function handleLobbyEvents(io: IOServer, socket: Socket) {
       data: {
         lobbyId: session.lobbyId,
         userId: `cpu_${botNumber}`,
-        displayName: `CPU_${botNumber}`,
+        displayName: (["Bernard le coquin", "Skull Kingounet", "Sarkozy", "Bismillah", "Kaèr Ache !", "Macron", "Michel Forever", "Gertrude"][botNumber - 1]) ?? `CPU_${botNumber}`,
         number: botNumber,
         color: colors[botNumber - 1] ?? '#FFFFFF',
         isBot: true,
