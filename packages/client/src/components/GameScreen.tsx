@@ -1,5 +1,30 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
+function formatEvent(e: any, players: any[]): string {
+  const name = (id: string) => players?.find((p: any) => p.id === id)?.name || id
+  switch (e.type) {
+    case 'message':
+      return e.data?.text || 'Message'
+    case 'roll':
+      return `${name(e.actor)} lance le dé : ${e.data?.roll}${e.data?.area ? ' → ' + e.data.area : ''}`
+    case 'move':
+      return `${name(e.data?.playerId || e.actor)} se déplace vers ${e.data?.areaId}`
+    case 'damage':
+      return `${name(e.data?.attacker || e.actor)} inflige ${e.data?.amount} dégât(s) à ${name(e.data?.target)}`
+    case 'death':
+      return `${name(e.data?.target)} est mort`
+    case 'reveal':
+      return `${name(e.actor)} révèle son personnage (${e.data?.character || ''})`
+    case 'card_used':
+      return `${name(e.actor)} utilise ${e.data?.card}`
+    case 'turn_start':
+      return `Tour de ${name(e.data?.turnPlayerId || e.actor)}`
+    case 'attack':
+      return `${name(e.actor)} attaque ${name(e.data?.target)}`
+    default:
+      return e.type
+  }
+}
 export default function GameScreen({
   player,
   public: publicState,
@@ -27,6 +52,7 @@ export default function GameScreen({
   const myNumber = publicState?.players.find((p: any) => p.id === player.userId)?.number
   const myPublic = publicState?.players.find((p: any) => p.id === player.userId)
   const isRevealed = myPublic?.state === 'revealed'
+  const [selectedTarget, setSelectedTarget] = useState<string>('')
 
   return (
     <div className="game-screen">
@@ -86,28 +112,79 @@ export default function GameScreen({
               <div>Chargement du personnage…</div>
             )}
           </div>
-          <div className="actions-panel">
-            <h3>Actions disponibles</h3>
-            {publicState?.availableActions.map((a: any) => (
-              <button key={a} onClick={() => handleAction(a)} disabled={!isMyTurn && a !== 'reveal'}>
-                {labelAction(a)}
-              </button>
-            ))}
-            {!isRevealed && (
+          {isMyTurn && (
+            <div className="actions-panel">
+              <h3>Actions disponibles</h3>
+              {publicState?.availableActions.includes('roll_die') && (
+                <button onClick={() => onAction({ type: 'roll_die', payload: {} })}>Lancer le dé</button>
+              )}
+              {publicState?.availableActions.includes('choose_area') && (
+                <div>
+                  <p>Choisir un lieu :</p>
+                  {publicState?.areas?.map((a: any) => (
+                    <button key={a.id} onClick={() => onAction({ type: 'choose_area', payload: { areaId: a.id } })}>
+                      {a.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {publicState?.availableActions.includes('use_area_action') && (
+                <div>
+                  <button onClick={() => onAction({ type: 'use_area_action', payload: { targetId: selectedTarget || undefined } })}>
+                    Utiliser l'action du lieu
+                  </button>
+                  <select value={selectedTarget} onChange={(e) => setSelectedTarget(e.target.value)}>
+                    <option value="">(aucune cible)</option>
+                    {publicState?.players
+                      ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
+                      .map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name || p.id}</option>
+                      ))}
+                  </select>
+                </div>
+              )}
+              {publicState?.availableActions.includes('decline_area_action') && (
+                <button onClick={() => onAction({ type: 'decline_area_action', payload: {} })}>Refuser le lieu</button>
+              )}
+              {publicState?.availableActions.includes('attack_player') && (
+                <div>
+                  <p>Attaquer :</p>
+                  {publicState?.players
+                    ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead' && p.location === myPublic?.location)
+                    .map((p: any) => (
+                      <button key={p.id} onClick={() => onAction({ type: 'attack_player', payload: { targetId: p.id } })}>
+                        {p.name || p.id}
+                      </button>
+                    ))}
+                </div>
+              )}
+              {publicState?.availableActions.includes('decline_attack') && (
+                <button onClick={() => onAction({ type: 'decline_attack', payload: {} })}>Refuser l'attaque</button>
+              )}
+              {publicState?.availableActions.includes('end_turn') && (
+                <button onClick={() => onAction({ type: 'end_turn', payload: {} })}>Fin de tour</button>
+              )}
+              {!isRevealed && (
+                <button onClick={() => onAction({ type: 'reveal', payload: {} })}>Révéler son identité</button>
+              )}
+            </div>
+          )}
+          {!isMyTurn && !isRevealed && (
+            <div className="actions-panel">
               <button onClick={() => onAction({ type: 'reveal', payload: {} })}>Révéler son identité</button>
-            )}
-            {publicState?.gameOver && (
-              <div className="game-over">
-                Partie terminée ! Gagnants: {publicState.winners.join(', ')}
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+          {publicState?.gameOver && (
+            <div className="game-over">
+              Partie terminée ! Gagnants: {publicState.winners.join(', ')}
+            </div>
+          )}
 
           <div className="log">
             <h3>Journal</h3>
             <div className="log-entries">
-              {publicState?.eventLog.slice(-10).map((e: any, i: number) => (
-                <div key={i} className="log-entry">{e.type}</div>
+              {publicState?.eventLog.slice(-15).map((e: any, i: number) => (
+                <div key={i} className="log-entry">{formatEvent(e, publicState?.players)}</div>
               ))}
             </div>
           </div>
