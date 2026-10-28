@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getAllCards } from '@shadow-hunters/shared'
 
 function formatEvent(e: any, state: any): string {
   const players = state?.players || []
@@ -65,6 +66,8 @@ export default function GameScreen({
   const [selectedTarget, setSelectedTarget] = useState<string>('')
   const [chatMessages, setChatMessages] = useState<{ from: string; text: string; at: string }[]>([])
   const [chatInput, setChatInput] = useState('')
+  const [hoveredCard, setHoveredCard] = useState<any>(null)
+  const allCards = getAllCards()
 
   useEffect(() => {
     if (!socket) return
@@ -108,7 +111,16 @@ export default function GameScreen({
                   : 'Personnage: secret'}
               </div>
               <div className="equipment">
-                Équipements: {p.equipment.map((e: any) => e.title).join(', ') || '—'}
+                Équipements: {p.equipment.map((c: any, i: number) => (
+                  <span
+                    key={c.id}
+                    className="card-link"
+                    onMouseEnter={() => setHoveredCard(allCards.find((x: any) => x.id === c.id) || c)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                  >
+                    {i > 0 ? ', ' : ''}{c.title}
+                  </span>
+                )) || '—'}
               </div>
             </div>
           ))}
@@ -234,12 +246,42 @@ export default function GameScreen({
             <h3>Journal</h3>
             <div className="log-entries">
               {publicState?.eventLog.slice(-20).map((e: any, i: number) => (
-                <div key={i} className={`log-entry ${e.type === 'damage' ? 'damage' : ''}`}>{formatEvent(e, publicState)}</div>
+                <div key={i} className={`log-entry ${e.type === 'damage' ? 'damage' : ''}`}>
+                  {e.type === 'card_drawn' || e.type === 'card_used' ? (
+                    <>
+                      {formatEvent(e, publicState).split(e.data?.card || '').map((part, idx, arr) =>
+                        idx < arr.length - 1 ? (
+                          <span key={idx}>
+                            {part}
+                            <span
+                              className="card-link"
+                              onMouseEnter={() => setHoveredCard(allCards.find((x: any) => x.id === e.data?.cardId) || { title: e.data?.card, description: '' })}
+                              onMouseLeave={() => setHoveredCard(null)}
+                            >
+                              {e.data?.card}
+                            </span>
+                          </span>
+                        ) : (
+                          <span key={idx}>{part}</span>
+                        )
+                      )}
+                    </>
+                  ) : (
+                    formatEvent(e, publicState)
+                  )}
+                </div>
               ))}
             </div>
           </div>
         </main>
       </div>
+      {hoveredCard && (
+        <div className="card-tooltip">
+          <strong>{hoveredCard.title}</strong>
+          <div>{hoveredCard.description || 'Aucune description'}</div>
+          {hoveredCard.type && <div>Type: {hoveredCard.type}</div>}
+        </div>
+      )}
     </div>
   )
 

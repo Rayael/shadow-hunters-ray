@@ -306,7 +306,7 @@ export class GameEngine {
     if (result.message) {
       events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: result.message } })
     }
-    events.push({ type: 'card_used', timestamp: now(), actor: actorId, target: targetId, data: { card: card.title, type: card.type } })
+    events.push({ type: 'card_used', timestamp: now(), actor: actorId, target: targetId, data: { card: card.title, cardId: card.id, type: card.type } })
     this.state.eventLog.push(...events)
     this.checkWinConditions()
     this.state.availableActions = [ActionType.EndTurn]

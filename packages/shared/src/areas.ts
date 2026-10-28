@@ -29,7 +29,7 @@ function drawCardAction(state: GameState, player: PlayerRecord, cardType: CardTy
     success: true,
     message: "Carte piochie : " + card.title + ".",
     events: [
-      { type: "card_drawn", timestamp: Date.now(), actor: player.id, data: { player: player.id, card: card.title, type: cardType } },
+      { type: "card_drawn", timestamp: Date.now(), actor: player.id, data: { player: player.id, card: card.title, cardId: card.id, type: cardType } },
     ],
   }
 }

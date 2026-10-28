@@ -100,3 +100,7 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a2e; c
 .cancel-btn { width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #aaa; cursor: pointer; }
 .cancel-btn:hover { background: rgba(255,255,255,0.1); color: #eee; }
 .log-entry.damage { color: #ff6b6b; font-weight: bold; }
+
+.card-link { color: #4cc9f0; cursor: pointer; text-decoration: underline; }
+.card-tooltip { position: fixed; bottom: 1rem; right: 1rem; background: #0f3460; border: 1px solid #4cc9f0; border-radius: 8px; padding: 0.8rem; max-width: 300px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.card-tooltip strong { color: #e94560; }
