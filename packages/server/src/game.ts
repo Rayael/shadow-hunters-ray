@@ -14,7 +14,7 @@ export async function saveGameState(lobbyId: string, engine: GameEngine) {
     turnPlayerId: engine.state.turnPlayerId ?? null,
     currentRoll: engine.state.currentRoll ?? null,
     gameOver: engine.state.gameOver,
-    stateJson: engine.state as any,
+    stateJson: JSON.parse(JSON.stringify(engine.state)) as any,
     updatedAt: new Date(),
   }
   const existing = await prisma.game.findFirst({ where: { lobbyId } })
