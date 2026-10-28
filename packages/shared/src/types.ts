@@ -78,7 +78,7 @@ export interface CharacterView {
   id: CharacterId
   name: string
   allegiance: Allegiance
-  maxDamage: number
+  maxDamage: number | null
   specialDesc: string
   revealed: boolean
   winConditionDesc?: string
@@ -207,7 +207,7 @@ export interface PlayerPublicView {
   color: string
   state: PlayerState
   damage: number
-  maxDamage: number
+  maxDamage: number | null
   isAlive: boolean
   isBot: boolean
   location: AreaId | null

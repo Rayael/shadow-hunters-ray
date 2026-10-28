@@ -82,17 +82,17 @@ export class GameEngine {
 
   getPublicView(forPlayerId: PlayerId | null = null): GameView['public'] {
     const players: PlayerPublicView[] = Array.from(this.state.players.values()).map((p) => {
+      const isOwner = forPlayerId ? forPlayerId === p.id : false
+      const revealed = p.state === PlayerState.Revealed
       const characterId = this.state.characterAssignments.get(p.id)
       let character: any = null
       if (characterId) {
         const ch = this.state.charactersPool.find((c) => c.id === characterId)
         if (ch) {
-          const isOwner = forPlayerId ? forPlayerId === p.id : false
-          const revealed = p.state === PlayerState.Revealed
           character = {
             id: ch.id, name: isOwner || revealed ? ch.name : 'Personnage secret',
             allegiance: isOwner || revealed ? ch.allegiance : null,
-            maxDamage: ch.maxDamage, specialDesc: ch.specialDesc,
+            maxDamage: isOwner || revealed ? ch.maxDamage : null, specialDesc: ch.specialDesc,
             revealed: isOwner || revealed,
             ...(isOwner || revealed ? { winConditionDesc: ch.winConditionDesc } : {}),
           }
@@ -100,7 +100,7 @@ export class GameEngine {
       }
       return {
         id: p.id, number: p.number, name: p.name, color: p.color,
-        state: p.state, damage: p.damage, maxDamage: p.maxDamage,
+        state: p.state, damage: p.damage, maxDamage: isOwner || revealed ? p.maxDamage : null,
         isAlive: p.state !== PlayerState.Dead, isBot: p.isBot,
         location: p.location,
         equipment: p.equipment.map((cid) => {

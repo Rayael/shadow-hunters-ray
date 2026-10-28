@@ -25,6 +25,8 @@ export default function GameScreen({
 
   const isMyTurn = publicState?.turnPlayerId === player.userId
   const myNumber = publicState?.players.find((p: any) => p.id === player.userId)?.number
+  const myPublic = publicState?.players.find((p: any) => p.id === player.userId)
+  const isRevealed = myPublic?.state === 'revealed'
 
   return (
     <div className="game-screen">
@@ -43,7 +45,7 @@ export default function GameScreen({
             <div key={p.id} className={`player-card ${p.state === 'dead' ? 'dead' : ''} ${p.id === player.userId ? 'me' : ''}`}>
               <span className="chip" style={{ backgroundColor: p.color }}>{p.number}</span>
               <strong>{p.name}</strong>{p.isBot ? ' (bot)' : ''}
-              <div className="health">Vie: {p.damage}/{p.maxDamage}</div>
+              <div className="health">Dégâts: {p.damage}{p.maxDamage ? `/${p.maxDamage}` : ''}</div>
               <div className="state">État: {p.state === 'hidden' ? 'Secret' : p.state === 'revealed' ? 'Révélé' : 'Mort'}</div>
               <div className="character">
                 {p.character?.revealed || p.id === player.userId
@@ -73,11 +75,27 @@ export default function GameScreen({
             ))}
           </div>
 
+          <div className="my-character">
+            <h3>Votre personnage</h3>
+            {privateView?.character ? (
+              <div>
+                <strong>{privateView.character.name}</strong> ({privateView.character.allegiance})
+                <div>{privateView.character.winConditionDesc}</div>
+              </div>
+            ) : (
+              <div>Chargement du personnage…</div>
+            )}
+          </div>
           <div className="actions-panel">
             <h3>Actions disponibles</h3>
             {publicState?.availableActions.map((a: any) => (
-              <button key={a} onClick={() => handleAction(a)}>{labelAction(a)}</button>
+              <button key={a} onClick={() => handleAction(a)} disabled={!isMyTurn && a !== 'reveal'}>
+                {labelAction(a)}
+              </button>
             ))}
+            {!isRevealed && (
+              <button onClick={() => onAction({ type: 'reveal', payload: {} })}>Révéler son identité</button>
+            )}
             {publicState?.gameOver && (
               <div className="game-over">
                 Partie terminée ! Gagnants: {publicState.winners.join(', ')}
