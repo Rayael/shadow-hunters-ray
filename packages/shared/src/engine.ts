@@ -226,7 +226,7 @@ export class GameEngine {
     if (this.state.turnPlayerId !== actorId) {
       throw new Error('Ce n\'est pas votre tour')
     }
-    const roll = Math.floor(Math.random() * 4) + 1
+    const roll = (Math.floor(Math.random() * 4) + 1) + (Math.floor(Math.random() * 6) + 1)
     this.state.currentRoll = roll
     this.state.phase = Phase.Movement
     const area = areaForRoll(roll)
