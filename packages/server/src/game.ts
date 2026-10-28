@@ -74,27 +74,28 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
 
     const humans = lobbyPlayers.filter((lp: LobbyPlayerRow) => !lp.isBot)
     const existingBots = lobbyPlayers.filter((lp: LobbyPlayerRow) => lp.isBot).length
-    const neededBots = Math.max(0, totalPlayers - humans.length)
 
-    if (neededBots > data.botCount) {
-      socket.emit('game:error', { error: 'Pas assez de bots demandés' })
+    if (totalPlayers < humans.length) {
+      socket.emit('game:error', { error: 'Trop de joueurs humains pour ce nombre total' })
       return
     }
 
-    const currentCount = lobbyPlayers.length
-    for (let i = 0; i < neededBots; i++) {
-      const botNum = currentCount + i + 1
+    const toCreate = totalPlayers - lobbyPlayers.length
+    if (toCreate > 0) {
       const colors = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
-      await prisma.lobbyPlayer.create({
-        data: {
-          lobbyId: session.lobbyId,
-          userId: `cpu_${botNum}`,
-          displayName: `CPU_${botNum}`,
-          number: botNum,
-          color: colors[botNum - 1] ?? '#FFFFFF',
-          isBot: true,
-        },
-      })
+      for (let i = 0; i < toCreate; i++) {
+        const botNum = lobbyPlayers.length + i + 1
+        await prisma.lobbyPlayer.create({
+          data: {
+            lobbyId: session.lobbyId,
+            userId: `cpu_${botNum}`,
+            displayName: `CPU_${botNum}`,
+            number: botNum,
+            color: colors[botNum - 1] ?? '#FFFFFF',
+            isBot: true,
+          },
+        })
+      }
     }
 
     const allPlayers = await prisma.lobbyPlayer.findMany({

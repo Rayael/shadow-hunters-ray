@@ -89,11 +89,44 @@ export function handleLobbyEvents(io: IOServer, socket: Socket) {
     await broadcastLobby()
   })
 
+  socket.on('lobby:chat', async (data: { text?: string }) => {
+    const text = (data?.text || '').trim()
+    if (!text) return
+    io.to(`lobby:${session.lobbyId}`).emit('lobby:chat', {
+      from: player.displayName,
+      text,
+      at: new Date().toISOString(),
+    })
+  })
+
   socket.on('disconnect', async () => {
     await prisma.session.updateMany({
       where: { id: session.id },
       data: { connected: false, socketId: null },
     })
+
+    // Transfert de l'hôte si le joueur déconnecté était hôte
+    if (player.isHost) {
+      const next = await prisma.lobbyPlayer.findFirst({
+        where: { lobbyId: session.lobbyId, id: { not: player.id } },
+        orderBy: { number: 'asc' },
+      })
+      if (next) {
+        await prisma.lobby.update({
+          where: { id: session.lobbyId },
+          data: { hostId: next.userId },
+        })
+        await prisma.lobbyPlayer.updateMany({
+          where: { lobbyId: session.lobbyId },
+          data: { isHost: false },
+        })
+        await prisma.lobbyPlayer.updateMany({
+          where: { lobbyId: session.lobbyId, userId: next.userId },
+          data: { isHost: true },
+        })
+      }
+    }
+
     await broadcastLobby()
   })
 }

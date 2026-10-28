@@ -45,6 +45,8 @@ app.use(cors({
   credentials: true,
 }))
 
+app.set('trust proxy', 1)
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -104,6 +106,12 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
     return res.status(403).json({ error: capacityCheck.error })
   }
 
+  // Déterminer si un hôte est actuellement connecté
+  const hostConnected = await prisma.session.findFirst({
+    where: { lobbyId: lobby.id, connected: true, player: { isHost: true } },
+  })
+  const isHost = playerCount === 0 || !hostConnected
+
   const colors = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
   const player = await prisma.lobbyPlayer.create({
     data: {
@@ -112,9 +120,13 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
       displayName: displayName.trim(),
       number: playerCount + 1,
       color: colors[playerCount] ?? '#FFFFFF',
-      isHost: playerCount === 0,
+      isHost: isHost,
     },
   })
+
+  if (isHost) {
+    await prisma.lobby.update({ where: { id: lobby.id }, data: { hostId: normalized } })
+  }
 
   const token = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function LobbyScreen({
   player,
@@ -20,6 +20,26 @@ export default function LobbyScreen({
   const [playerCount, setPlayerCount] = useState(4)
   const [botCount, setBotCount] = useState(0)
   const [error, setError] = useState('')
+  const [chatMessages, setChatMessages] = useState<{ from: string; text: string; at: string }[]>([])
+  const [chatInput, setChatInput] = useState('')
+
+  useEffect(() => {
+    if (!socket) return
+    const handler = (msg: any) => {
+      setChatMessages((prev) => [...prev, msg])
+    }
+    socket.on('lobby:chat', handler)
+    return () => {
+      socket.off('lobby:chat', handler)
+    }
+  }, [socket])
+
+  const handleSendChat = () => {
+    const text = chatInput.trim()
+    if (!text || !socket) return
+    socket.emit('lobby:chat', { text })
+    setChatInput('')
+  }
 
   const isHost = player.isHost
   const humanCount = lobby.players.filter((p: any) => !p.isBot).length
@@ -67,10 +87,14 @@ export default function LobbyScreen({
         <main className="lobby-main">
           <div className="chat-box">
             <h3>Chat</h3>
-            <div className="chat-messages">Bienvenue dans le lobby unique.</div>
+            <div className="chat-messages">{chatMessages.map((m, i) => (
+                 <div key={i} className="chat-message">
+                   <strong>{m.from}:</strong> {m.text}
+                 </div>
+               ))}</div>
             <div className="chat-input">
-              <input type="text" placeholder="Écrire un message..." />
-              <button>Envoyer</button>
+              <input type="text" placeholder="Écrire un message..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSendChat() }} />
+              <button onClick={handleSendChat}>Envoyer</button>
             </div>
           </div>
 
