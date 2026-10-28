@@ -170,7 +170,7 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
   }
 
   const token = randomBytes(32).toString('hex')
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
   const session = await prisma.session.create({
     data: { token, lobbyId: lobby.id, playerId: player.id, expiresAt },
   })
@@ -181,7 +181,6 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
     sameSite: isSecure ? 'strict' : 'lax',
     secure: isSecure,
     path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
   })
 
   const lobbyWithPlayers = await prisma.lobby.findUnique({
@@ -238,9 +237,30 @@ app.get('/api/me', async (req: Request, res: Response) => {
   if (!session || session.expiresAt < new Date()) {
     return res.status(401).json({ error: 'Session invalide ou expirée' })
   }
+  // Si personne d'autre n'est connecté, purger les anciens joueurs/sessions
+  const otherActive = await prisma.session.count({
+    where: { lobbyId: session.lobbyId, connected: true, id: { not: session.id } },
+  })
+  if (otherActive === 0) {
+    await prisma.session.deleteMany({
+      where: { lobbyId: session.lobbyId, id: { not: session.id } },
+    })
+    await prisma.lobbyPlayer.deleteMany({
+      where: { lobbyId: session.lobbyId, id: { not: session.player.id } },
+    })
+    await prisma.lobby.update({
+      where: { id: session.lobbyId },
+      data: { hostId: session.player.userId },
+    })
+    await prisma.lobbyPlayer.update({
+      where: { id: session.player.id },
+      data: { isHost: true },
+    })
+  }
+
   await prisma.session.update({
     where: { id: session.id },
-    data: { connected: true, socketId: null },
+    data: { connected: true, socketId: null, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
   })
   res.json({
     player: {
