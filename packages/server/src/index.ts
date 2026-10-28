@@ -223,6 +223,30 @@ if (NODE_ENV === 'production') {
   })
 }
 
+app.get('/api/me', async (req: Request, res: Response) => {
+  const token = req.cookies?.session_token
+  if (!token) return res.status(401).json({ error: 'Non authentifié' })
+  const session = await prisma.session.findUnique({
+    where: { token },
+    include: { player: true, lobby: true },
+  })
+  if (!session || session.expiresAt < new Date()) {
+    return res.status(401).json({ error: 'Session invalide ou expirée' })
+  }
+  await prisma.session.update({
+    where: { id: session.id },
+    data: { connected: true, socketId: null },
+  })
+  res.json({
+    player: {
+      id: session.player.id, userId: session.player.userId, displayName: session.player.displayName,
+      number: session.player.number, color: session.player.color, isHost: session.player.isHost, isBot: session.player.isBot,
+    },
+    lobby: { id: session.lobby.id, status: session.lobby.status, hostId: session.lobby.hostId },
+    token,
+  })
+})
+
 io.use(authenticateSession)
 io.on('connection', (socket: Socket) => {
   handleLobbyEvents(io, socket)

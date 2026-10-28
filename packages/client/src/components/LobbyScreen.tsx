@@ -13,8 +13,8 @@ export default function LobbyScreen({
   lobby: any
   socket: any
   onStartGame: (data: { playerCount: number; botCount: number }) => void
-  onAddBot: () => void
-  onRemoveBot: (userId: string) => void
+  onAddBot?: () => void
+  onRemoveBot?: (userId: string) => void
   onRulesOpen: () => void
 }) {
   const [playerCount, setPlayerCount] = useState(4)
@@ -45,7 +45,7 @@ export default function LobbyScreen({
   const humanCount = lobby.players.filter((p: any) => !p.isBot).length
   const botCountCurrent = lobby.players.filter((p: any) => p.isBot).length
   const total = lobby.players.length
-  const canStart = total >= 4 && total <= 8
+  const canStart = playerCount >= 4 && playerCount <= 8 && playerCount >= total
 
   const handleStart = () => {
     setError('')
@@ -76,7 +76,7 @@ export default function LobbyScreen({
               <li key={p.userId} className={p.isBot ? 'bot' : ''}>
                 <span className="chip" style={{ backgroundColor: p.color }}>{p.number}</span>
                 {p.displayName}{p.isBot ? ' (bot)' : ''}{p.isHost ? ' — hôte' : ''}
-                {p.isBot && isHost && <button onClick={() => onRemoveBot(p.userId)}>Retirer</button>}
+                {p.isBot && isHost && <button onClick={() => onRemoveBot?.(p.userId)}>Retirer</button>}
               </li>
             ))}
           </ul>

@@ -20,37 +20,24 @@ export default function App() {
   const [rulesOpen, setRulesOpen] = useState(false)
   const socketRef = useRef<Socket | null>(null)
 
-  useEffect(() => {
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect()
-      }
+  const connectSocket = useCallback((token: string, playerData: any, lobbyData: any) => {
+    if (socketRef.current) {
+      socketRef.current.disconnect()
     }
-  }, [])
-
-  const handleJoin = useCallback(async (data: { password: string; displayName: string }) => {
-    const res = await fetch(`${API_URL}/api/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(data),
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      alert(json.error || 'Erreur de connexion')
-      return
-    }
-    setPlayer(json.player)
-
-    // Connexion Socket.IO après authentification réussie (cookie défini par le serveur)
+    setPlayer(playerData)
+    setLobby(lobbyData)
     const socket = io(SOCKET_URL, {
-      auth: { token: json.token },
+      auth: { token },
+      withCredentials: true,
     })
     socketRef.current = socket
     setSocket(socket)
 
     socket.on('connect', () => {
       console.log('Connecté au serveur Socket.IO')
+      if (lobbyData?.status === 'GAME') {
+        socket.emit('game:reconnect')
+      }
     })
 
     socket.on('lobby:sync', (data: any) => {
@@ -59,6 +46,7 @@ export default function App() {
 
     socket.on('game:state', (data: any) => {
       setGameState(data.public)
+      setScreen('game')
     })
 
     socket.on('game:private', (data: any) => {
@@ -73,23 +61,50 @@ export default function App() {
       console.log('Déconnecté du serveur')
     })
 
-    setScreen('lobby')
+    if (lobbyData?.status === 'GAME') {
+      setScreen('game')
+    } else {
+      setScreen('lobby')
+    }
+    return socket
   }, [])
+
+  useEffect(() => {
+    // Tentative de reconnexion automatique via le cookie de session
+    fetch(`${API_URL}/api/me`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.token && json?.player && json?.lobby) {
+          connectSocket(json.token, json.player, json.lobby)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect()
+      }
+    }
+  }, [connectSocket])
+
+  const handleJoin = useCallback(async (data: { password: string; displayName: string }) => {
+    const res = await fetch(`${API_URL}/api/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      alert(json.error || 'Erreur de connexion')
+      return
+    }
+    connectSocket(json.token, json.player, json.lobby)
+  }, [connectSocket])
 
   const handleStartGame = useCallback(async (data: { playerCount: number; botCount: number }) => {
     if (!socket) return
     socket.emit('game:start', data)
     setScreen('game')
-  }, [socket])
-
-  const handleAddBot = useCallback(() => {
-    if (!socket) return
-    socket.emit('lobby:add_bot')
-  }, [socket])
-
-  const handleRemoveBot = useCallback((userId: string) => {
-    if (!socket) return
-    socket.emit('lobby:remove_bot', { userId })
   }, [socket])
 
   const handleGameAction = useCallback((data: { type: string; payload: any }) => {
@@ -113,8 +128,6 @@ export default function App() {
           lobby={lobby}
           socket={socket}
           onStartGame={handleStartGame}
-          onAddBot={handleAddBot}
-          onRemoveBot={handleRemoveBot}
           onRulesOpen={() => setRulesOpen(true)}
         />
       )}
