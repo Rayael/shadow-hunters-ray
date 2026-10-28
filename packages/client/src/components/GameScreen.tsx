@@ -1,26 +1,36 @@
 import { useState, useEffect } from 'react'
 
-function formatEvent(e: any, players: any[]): string {
-  const name = (id: string) => players?.find((p: any) => p.id === id)?.name || id
+function formatEvent(e: any, state: any): string {
+  const players = state?.players || []
+  const areas = state?.areas || []
+  const name = (id: string) => players.find((p: any) => p.id === id)?.name || id
+  const areaName = (id: string) => areas.find((a: any) => a.id === id)?.name || id
   switch (e.type) {
     case 'message':
       return e.data?.text || 'Message'
     case 'roll':
-      return `${name(e.actor)} lance le dé : ${e.data?.roll}${e.data?.area ? ' → ' + e.data.area : ''}`
+      if (e.data?.roll === 7) return `${name(e.actor)} lance le dé et fait : 7 (choix de lieu)`
+      return `${name(e.actor)} a lancé le dé et fait : ${e.data?.roll}, arrivant au ${e.data?.area || areaName(e.data?.areaId)}`
     case 'move':
-      return `${name(e.data?.playerId || e.actor)} se déplace vers ${e.data?.areaId}`
+      return `${name(e.data?.playerId || e.actor)} se déplace vers ${areaName(e.data?.areaId)}`
+    case 'area_action':
+      return `${name(e.actor)} utilise l'action de ${e.data?.areaName || areaName(e.data?.areaId)}`
+    case 'card_drawn':
+      return `${name(e.data?.player || e.actor)} pioche une carte ${e.data?.type || ''} : ${e.data?.card}`
+    case 'card_used':
+      return `${name(e.actor)} utilise la carte ${e.data?.card}`
     case 'damage':
       return `${name(e.data?.attacker || e.actor)} inflige ${e.data?.amount} dégât(s) à ${name(e.data?.target)}`
     case 'death':
       return `${name(e.data?.target)} est mort`
     case 'reveal':
       return `${name(e.actor)} révèle son personnage (${e.data?.character || ''})`
-    case 'card_used':
-      return `${name(e.actor)} utilise ${e.data?.card}`
     case 'turn_start':
       return `Tour de ${name(e.data?.turnPlayerId || e.actor)}`
     case 'attack':
       return `${name(e.actor)} attaque ${name(e.data?.target)}`
+    case 'equipment_stolen':
+      return `${name(e.actor)} vole un équipement à ${name(e.data?.from)}`
     default:
       return e.type
   }
@@ -78,7 +88,7 @@ export default function GameScreen({
               <div className="state">État: {p.state === 'hidden' ? 'Secret' : p.state === 'revealed' ? 'Révélé' : 'Mort'}</div>
               <div className="character">
                 {p.character?.revealed || p.id === player.userId
-                  ? `Personnage: ${p.character?.name || '?'}`
+                  ? `Personnage: ${p.character?.name || '?'}${p.character?.revealed ? ' — Spécial: ' + (p.character?.specialDesc || '') : ''}`
                   : 'Personnage: secret'}
               </div>
               <div className="equipment">
@@ -110,6 +120,7 @@ export default function GameScreen({
               <div>
                 <strong>{privateView.character.name}</strong> ({privateView.character.allegiance})
                 <div>{privateView.character.winConditionDesc}</div>
+                <div>Spécial : {privateView.character.specialDesc}</div>
               </div>
             ) : (
               <div>Chargement du personnage…</div>
@@ -186,8 +197,8 @@ export default function GameScreen({
           <div className="log">
             <h3>Journal</h3>
             <div className="log-entries">
-              {publicState?.eventLog.slice(-15).map((e: any, i: number) => (
-                <div key={i} className="log-entry">{formatEvent(e, publicState?.players)}</div>
+              {publicState?.eventLog.slice(-20).map((e: any, i: number) => (
+                <div key={i} className="log-entry">{formatEvent(e, publicState)}</div>
               ))}
             </div>
           </div>
