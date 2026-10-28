@@ -32,5 +32,11 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "allowScripts": {
+    "prisma@7.10.1": true,
+    "@prisma/engines@7.10.1": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true
+  }
 }

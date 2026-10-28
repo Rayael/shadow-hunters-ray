@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import path from 'path'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { rateLimit } from 'express-rate-limit'
 import { authenticateSession } from './auth.js'
 import { handleLobbyEvents } from './lobby.js'
@@ -19,7 +20,8 @@ import {
 } from './validation.js'
 import { setupBotHandling } from './bot.js'
 
-export const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+export const prisma = new PrismaClient({ adapter })
 
 const PORT = Number(process.env.PORT || 3001)
 const LOBBY_PASSWORD = process.env.LOBBY_PASSWORD || 'EDGAR'
