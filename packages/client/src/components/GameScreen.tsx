@@ -59,6 +59,9 @@ export default function GameScreen({
       <header className="game-header">
         <h1>Shadow Hunters</h1>
         <button onClick={onRulesOpen}>Règles</button>
+        {player?.isHost && (
+          <button onClick={() => socket.emit('game:end')}>Mettre fin à la partie</button>
+        )}
         <span className="turn-indicator">
           {isMyTurn ? 'Votre tour' : `Tour du joueur ${publicState?.turnPlayerNumber}`}
         </span>

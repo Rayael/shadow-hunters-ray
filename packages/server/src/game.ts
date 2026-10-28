@@ -47,6 +47,18 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
 
   socket.join(`game:${session.lobbyId}`)
 
+  socket.on('game:end', async () => {
+    if (!player?.isHost) return
+    await prisma.session.deleteMany({ where: { lobbyId: session.lobbyId } })
+    await prisma.lobbyPlayer.deleteMany({ where: { lobbyId: session.lobbyId } })
+    await prisma.game.deleteMany({ where: { lobbyId: session.lobbyId } })
+    await prisma.log.deleteMany({ where: { lobbyId: session.lobbyId } })
+    await prisma.lobby.update({ where: { id: session.lobbyId }, data: { status: 'LOBBY', hostId: null } })
+    games.delete(session.lobbyId)
+    io.to(`game:${session.lobbyId}`).emit('game:ended')
+    io.to(`lobby:${session.lobbyId}`).emit('game:ended')
+  })
+
   function getEngine(): GameEngine | undefined {
     return games.get(session.lobbyId)
   }

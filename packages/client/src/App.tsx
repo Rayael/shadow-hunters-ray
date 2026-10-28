@@ -57,6 +57,17 @@ export default function App() {
       alert(data.error)
     })
 
+  socket.on('game:ended', () => {
+    socket.disconnect()
+    socketRef.current = null
+    setSocket(null)
+    setPlayer(null)
+    setLobby(null)
+    setGameState(null)
+    setPrivateView(null)
+    setScreen('join')
+  })
+
     socket.on('disconnect', () => {
       console.log('Déconnecté du serveur')
     })
