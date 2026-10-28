@@ -215,14 +215,6 @@ app.post('/api/logout', async (req: Request, res: Response) => {
   res.json({ ok: true })
 })
 
-// Fallback SPA : à placer après toutes les routes API
-if (NODE_ENV === 'production') {
-  const clientDist = path.resolve(__dirname, '../../client/dist')
-  app.get('*', (_req: Request, res: Response) => {
-    res.sendFile(path.join(clientDist, 'index.html'))
-  })
-}
-
 app.get('/api/me', async (req: Request, res: Response) => {
   const token = req.cookies?.session_token
   if (!token) return res.status(401).json({ error: 'Non authentifié' })
@@ -246,6 +238,14 @@ app.get('/api/me', async (req: Request, res: Response) => {
     token,
   })
 })
+
+// Fallback SPA : à placer après toutes les routes API
+if (NODE_ENV === 'production') {
+  const clientDist = path.resolve(__dirname, '../../client/dist')
+  app.get('*', (_req: Request, res: Response) => {
+    res.sendFile(path.join(clientDist, 'index.html'))
+  })
+}
 
 io.use(authenticateSession)
 io.on('connection', (socket: Socket) => {
