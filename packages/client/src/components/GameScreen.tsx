@@ -19,7 +19,9 @@ function formatEvent(e: any, state: any): string {
     case 'card_drawn':
       return `${name(e.data?.player || e.actor)} pioche une carte ${e.data?.type || ''} : ${e.data?.card}`
     case 'card_used':
-      return `${name(e.actor)} utilise la carte ${e.data?.card}`
+      return e.data?.target
+        ? `${name(e.actor)} a utilisé ${e.data?.card} sur ${name(e.data.target)} !`
+        : `${name(e.actor)} a utilisé ${e.data?.card} !`
     case 'damage':
       return `${name(e.data?.attacker || e.actor)} inflige ${e.data?.amount} dégât(s) à ${name(e.data?.target)}`
     case 'death':
