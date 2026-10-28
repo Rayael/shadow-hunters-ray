@@ -170,7 +170,7 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
   }
 
   const token = randomBytes(32).toString('hex')
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
   const session = await prisma.session.create({
     data: { token, lobbyId: lobby.id, playerId: player.id, expiresAt },
   })
@@ -260,7 +260,7 @@ app.get('/api/me', async (req: Request, res: Response) => {
 
   await prisma.session.update({
     where: { id: session.id },
-    data: { connected: true, socketId: null, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+    data: { connected: true, socketId: null, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
   })
   res.json({
     player: {
@@ -299,6 +299,13 @@ setupBotHandling(io, games)
 
 // Démarrage et reprise de partie si existante
 async function start() {
+  // Purger les données parasites (sessions, joueurs, parties) au démarrage
+  await prisma.session.deleteMany({})
+  await prisma.lobbyPlayer.deleteMany({})
+  await prisma.game.deleteMany({})
+  await prisma.log.deleteMany({})
+  await prisma.lobby.updateMany({ data: { status: 'LOBBY', hostId: null } })
+
   // Tenter de restaurer une partie en cours depuis la DB
   const existingGame = await prisma.game.findFirst({
     where: { lobbyId: 'shadow-hunters' },
