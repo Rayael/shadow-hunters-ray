@@ -88,6 +88,17 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
     })
   }
 
+  // Purger le lobby s'il n'y a plus aucune session connectée (stale)
+  const activeCount = await prisma.session.count({
+    where: { lobbyId: lobby.id, connected: true },
+  })
+  if (activeCount === 0) {
+    await prisma.session.deleteMany({ where: { lobbyId: lobby.id } })
+    await prisma.game.deleteMany({ where: { lobbyId: lobby.id } })
+    await prisma.lobbyPlayer.deleteMany({ where: { lobbyId: lobby.id } })
+    await prisma.lobby.update({ where: { id: lobby.id }, data: { status: 'LOBBY', hostId: null } })
+  }
+
   // Nettoyer les joueurs humains déconnectés si le lobby est plein
   const connectedSessions = await prisma.session.findMany({
     where: { lobbyId: lobby.id, connected: true },
