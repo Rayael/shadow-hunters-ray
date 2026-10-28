@@ -104,7 +104,6 @@ export default function App() {
   const handleStartGame = useCallback(async (data: { playerCount: number; botCount: number }) => {
     if (!socket) return
     socket.emit('game:start', data)
-    setScreen('game')
   }, [socket])
 
   const handleGameAction = useCallback((data: { type: string; payload: any }) => {

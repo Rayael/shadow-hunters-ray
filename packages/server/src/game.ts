@@ -129,6 +129,7 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
 
     const publicView = engine.getPublicView()
     io.to(`game:${session.lobbyId}`).emit('game:state', { public: publicView })
+    io.to(`lobby:${session.lobbyId}`).emit('game:state', { public: publicView })
 
     for (const lp of allPlayers) {
       const privateView = engine.getPrivateView(lp.userId as PlayerId)
