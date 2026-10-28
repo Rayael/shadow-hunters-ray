@@ -241,7 +241,12 @@ export default function GameScreen({
                 <div>
                   <p>Attaquer :</p>
                   {publicState?.players
-                    ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead' && p.location === myPublic?.location)
+                    ?.filter((p: any) => {
+                      if (p.id === player.userId || p.state === 'dead') return false
+                      const myLoc = myPublic?.location
+                      const paired = publicState?.areaPairs?.find((pair: any) => pair[0] === myLoc)?.[1] || publicState?.areaPairs?.find((pair: any) => pair[1] === myLoc)?.[0]
+                      return p.location === myLoc || p.location === paired
+                    })
                     .map((p: any) => (
                       <button key={p.id} onClick={() => onAction({ type: 'attack_player', payload: { targetId: p.id } })}>
                         {p.name || p.id}
@@ -251,6 +256,11 @@ export default function GameScreen({
               )}
               {publicState?.availableActions.includes('decline_attack') && (
                 <button onClick={() => onAction({ type: 'decline_attack', payload: {} })}>Refuser l'attaque</button>
+              )}
+              {publicState?.availableActions.includes('use_special') && (
+                <button onClick={() => onAction({ type: 'use_special', payload: { targetId: selectedTarget || undefined } })}>
+                  Capacité spéciale
+                </button>
               )}
               {publicState?.availableActions.includes('end_turn') && (
                 <button onClick={() => onAction({ type: 'end_turn', payload: {} })}>Fin de tour</button>

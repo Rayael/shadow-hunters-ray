@@ -127,6 +127,7 @@ export interface GameState {
   cardsDeck: { white: CardRecord[]; black: CardRecord[]; hermit: CardRecord[] }
   cardsDiscard: { white: CardRecord[]; black: CardRecord[]; hermit: CardRecord[] }
   areas: Map<AreaId, AreaRecord>
+  areaPairs: Map<AreaId, AreaId>
   currentRoll: number | null
   availableActions: ActionType[]
   eventLog: GameEvent[]
@@ -232,6 +233,7 @@ export interface GameView {
     turnPlayerNumber: number | null
     players: PlayerPublicView[]
     areas: AreaView[]
+    areaPairs: [string, string][]
     decks: { white: number; black: number; hermit: number; discard: number }
     eventLog: GameEvent[]
     gameOver: boolean

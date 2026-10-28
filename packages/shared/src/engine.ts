@@ -60,6 +60,17 @@ export class GameEngine {
     const areas = getDefaultAreas() as AreaRecord[]
     const areasMap = new Map<AreaId, AreaRecord>()
     areas.forEach((a) => areasMap.set(a.id, a))
+    const areaIds = Array.from(areasMap.keys())
+    const shuffledAreaIds = shuffle([...areaIds])
+    const areaPairs = new Map<AreaId, AreaId>()
+    for (let i = 0; i < shuffledAreaIds.length - 1; i += 2) {
+      areaPairs.set(shuffledAreaIds[i], shuffledAreaIds[i + 1])
+      areaPairs.set(shuffledAreaIds[i + 1], shuffledAreaIds[i])
+    }
+    if (shuffledAreaIds.length % 2 !== 0) {
+      const last = shuffledAreaIds[shuffledAreaIds.length - 1]
+      areaPairs.set(last, last)
+    }
     const allCards = getAllCards()
     const whiteDeck = shuffle(allCards.filter((c) => c.type === CardType.White))
     const blackDeck = shuffle(allCards.filter((c) => c.type === CardType.Black))
@@ -71,7 +82,7 @@ export class GameEngine {
       charactersPool: getDefaultCharacterPool(),
       cardsDeck: { white: whiteDeck, black: blackDeck, hermit: hermitDeck },
       cardsDiscard: { white: [], black: [], hermit: [] },
-      areas: areasMap, currentRoll: null, availableActions: [],
+      areas: areasMap, areaPairs, currentRoll: null, availableActions: [],
       eventLog: [{ type: 'message', timestamp: now(), data: { text: 'Partie créée.' } }],
       gameOver: false, winners: [],
       config: { playerCount, botCount: players.filter((p) => p.isBot).length, factionCounts },
@@ -134,6 +145,7 @@ export class GameEngine {
         discard: totalDiscard,
       },
       eventLog: this.state.eventLog,
+      areaPairs: Array.from(this.state.areaPairs.entries()),
       gameOver: this.state.gameOver, winners: this.state.winners,
       availableActions: this.state.availableActions, currentRoll: this.state.currentRoll,
     }
@@ -370,7 +382,10 @@ export class GameEngine {
     const target = this.state.players.get(targetId)
     if (!actor || !target) throw new Error('Joueur introuvable')
     if (target.state === PlayerState.Dead) throw new Error('Le joueur cible est déjà mort')
-    if (actor.location !== target.location) throw new Error('Vous devez être sur le même lieu pour attaquer')
+    const pairedArea = actor.location ? this.state.areaPairs.get(actor.location) : undefined
+    if (actor.location !== target.location && pairedArea !== target.location) {
+      throw new Error('Vous devez être sur le même lieu ou le lieu pair pour attaquer')
+    }
     const dieSides = 4
     const roll = Math.floor(Math.random() * dieSides) + 1
     const damage = roll >= 4 ? 1 : 0
