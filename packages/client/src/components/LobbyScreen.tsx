@@ -42,9 +42,9 @@ export default function LobbyScreen({
   }
 
   const isHost = player.isHost
-  const humanCount = lobby.players.filter((p: any) => !p.isBot).length
-  const botCountCurrent = lobby.players.filter((p: any) => p.isBot).length
-  const total = lobby.players.length
+  const humanCount = lobby.players?.filter((p: any) => !p.isBot).length ?? 0
+  const botCountCurrent = lobby.players?.filter((p: any) => p.isBot).length ?? 0
+  const total = lobby.players?.length ?? 0
   const canStart = playerCount >= 4 && playerCount <= 8 && playerCount >= total
 
   const handleStart = () => {
@@ -72,7 +72,7 @@ export default function LobbyScreen({
         <aside className="lobby-sidebar">
           <h2>Joueurs ({total}/9)</h2>
           <ul>
-            {lobby.players.map((p: any) => (
+            {lobby.players?.map((p: any) => (
               <li key={p.userId} className={p.isBot ? 'bot' : ''}>
                 <span className="chip" style={{ backgroundColor: p.color }}>{p.number}</span>
                 {p.displayName}{p.isBot ? ' (bot)' : ''}{p.isHost ? ' — hôte' : ''}

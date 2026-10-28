@@ -182,12 +182,23 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   })
 
+  const lobbyWithPlayers = await prisma.lobby.findUnique({
+    where: { id: lobby.id },
+    include: { players: { orderBy: { number: 'asc' } } },
+  })
+
   res.json({
     player: {
       id: player.id, userId: player.userId, displayName: player.displayName,
       number: player.number, color: player.color, isHost: player.isHost, isBot: player.isBot,
     },
-    lobby: { id: lobby.id, status: lobby.status, hostId: lobby.hostId },
+    lobby: {
+      id: lobby.id, status: lobby.status, hostId: lobby.hostId,
+      players: (lobbyWithPlayers?.players ?? []).map((p: any) => ({
+        id: p.id, userId: p.userId, displayName: p.displayName,
+        number: p.number, color: p.color, isHost: p.isHost, isBot: p.isBot,
+      })),
+    },
     token,
   })
 })
@@ -220,7 +231,7 @@ app.get('/api/me', async (req: Request, res: Response) => {
   if (!token) return res.status(401).json({ error: 'Non authentifié' })
   const session = await prisma.session.findUnique({
     where: { token },
-    include: { player: true, lobby: true },
+    include: { player: true, lobby: { include: { players: { orderBy: { number: 'asc' } } } } },
   })
   if (!session || session.expiresAt < new Date()) {
     return res.status(401).json({ error: 'Session invalide ou expirée' })
@@ -234,7 +245,15 @@ app.get('/api/me', async (req: Request, res: Response) => {
       id: session.player.id, userId: session.player.userId, displayName: session.player.displayName,
       number: session.player.number, color: session.player.color, isHost: session.player.isHost, isBot: session.player.isBot,
     },
-    lobby: { id: session.lobby.id, status: session.lobby.status, hostId: session.lobby.hostId },
+    lobby: {
+      id: session.lobby.id,
+      status: session.lobby.status,
+      hostId: session.lobby.hostId,
+      players: session.lobby.players.map((p: any) => ({
+        id: p.id, userId: p.userId, displayName: p.displayName,
+        number: p.number, color: p.color, isHost: p.isHost, isBot: p.isBot,
+      })),
+    },
     token,
   })
 })

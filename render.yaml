@@ -23,3 +23,5 @@ services:
         sync: false
       - key: PUBLIC_URL
         sync: false
+      - key: PRISMA_DISABLE_UPDATE_CHECK
+        value: "1"
