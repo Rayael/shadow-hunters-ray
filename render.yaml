@@ -4,8 +4,8 @@ services:
     env: node
     region: frankfurt
     plan: free
-    buildCommand: "npm install --include=dev && npm run build && cd packages/server && npx prisma db push --accept-data-loss --skip-generate"
-    startCommand: "cd packages/server && npx prisma db push --accept-data-loss --skip-generate && npm start"
+    buildCommand: "npm install --include=dev && npm run build"
+    startCommand: "npm run server:start"
     envVars:
       - key: NODE_VERSION
         value: "20"

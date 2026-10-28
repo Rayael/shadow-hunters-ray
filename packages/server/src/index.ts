@@ -61,9 +61,6 @@ app.get('/healthz', (_req: Request, res: Response) => {
 if (NODE_ENV === 'production') {
   const clientDist = path.resolve(__dirname, '../../client/dist')
   app.use(express.static(clientDist))
-  app.get('*', (_req: Request, res: Response) => {
-    res.sendFile(path.join(clientDist, 'index.html'))
-  })
 }
 
 app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
@@ -166,6 +163,14 @@ app.post('/api/logout', async (req: Request, res: Response) => {
   res.clearCookie('session_token')
   res.json({ ok: true })
 })
+
+// Fallback SPA : à placer après toutes les routes API
+if (NODE_ENV === 'production') {
+  const clientDist = path.resolve(__dirname, '../../client/dist')
+  app.get('*', (_req: Request, res: Response) => {
+    res.sendFile(path.join(clientDist, 'index.html'))
+  })
+}
 
 io.use(authenticateSession)
 io.on('connection', (socket: Socket) => {
