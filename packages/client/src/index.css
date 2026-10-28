@@ -99,3 +99,4 @@ body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a2e; c
 .target-list button:hover { background: rgba(255,255,255,0.15); }
 .cancel-btn { width: 100%; padding: 0.6rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #aaa; cursor: pointer; }
 .cancel-btn:hover { background: rgba(255,255,255,0.1); color: #eee; }
+.log-entry.damage { color: #ff6b6b; font-weight: bold; }

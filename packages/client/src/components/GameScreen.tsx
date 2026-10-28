@@ -63,6 +63,22 @@ export default function GameScreen({
   const myPublic = publicState?.players.find((p: any) => p.id === player.userId)
   const isRevealed = myPublic?.state === 'revealed'
   const [selectedTarget, setSelectedTarget] = useState<string>('')
+  const [chatMessages, setChatMessages] = useState<{ from: string; text: string; at: string }[]>([])
+  const [chatInput, setChatInput] = useState('')
+
+  useEffect(() => {
+    if (!socket) return
+    const handler = (msg: any) => setChatMessages((prev) => [...prev, msg])
+    socket.on('game:chat', handler)
+    return () => { socket.off('game:chat', handler) }
+  }, [socket])
+
+  const handleSendChat = () => {
+    const text = chatInput.trim()
+    if (!text || !socket) return
+    socket.emit('game:chat', { text })
+    setChatInput('')
+  }
 
   return (
     <div className="game-screen">
@@ -96,12 +112,32 @@ export default function GameScreen({
               </div>
             </div>
           ))}
-        </aside>
+          <div className="chat-box">
+          <h3>Chat</h3>
+          <div className="chat-messages">
+            {chatMessages.map((m, i) => (
+              <div key={i} className="chat-message">
+                <strong>{m.from}:</strong> {m.text}
+              </div>
+            ))}
+          </div>
+          <div className="chat-input">
+            <input
+              type="text"
+              placeholder="Message..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSendChat() }}
+            />
+            <button onClick={handleSendChat}>Envoyer</button>
+          </div>
+        </div>
+      </aside>
 
         <main className="board-area">
           <div className="board">
             {publicState?.areas.map((area: any) => (
-              <div key={area.id} className="area">
+              <div key={area.id} className="area" style={{ backgroundColor: `hsl(${(area.id.charCodeAt(0) * 47) % 360}, 35%, 22%)` }}>
                 <div className="area-name">{area.name}</div>
                 <div className="area-domain">Dé: {area.domain.join(', ')}</div>
                 <div className="area-players">
@@ -198,7 +234,7 @@ export default function GameScreen({
             <h3>Journal</h3>
             <div className="log-entries">
               {publicState?.eventLog.slice(-20).map((e: any, i: number) => (
-                <div key={i} className="log-entry">{formatEvent(e, publicState)}</div>
+                <div key={i} className={`log-entry ${e.type === 'damage' ? 'damage' : ''}`}>{formatEvent(e, publicState)}</div>
               ))}
             </div>
           </div>

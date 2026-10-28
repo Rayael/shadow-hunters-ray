@@ -47,6 +47,16 @@ export function handleGameEvents(io: IOServer, socket: Socket) {
 
   socket.join(`game:${session.lobbyId}`)
 
+  socket.on('game:chat', (data: { text?: string }) => {
+    const text = (data?.text || '').trim()
+    if (!text) return
+    io.to(`game:${session.lobbyId}`).emit('game:chat', {
+      from: player.displayName,
+      text,
+      at: new Date().toISOString(),
+    })
+  })
+
   socket.on('game:end', async () => {
     if (!player?.isHost) return
     await prisma.session.deleteMany({ where: { lobbyId: session.lobbyId } })
