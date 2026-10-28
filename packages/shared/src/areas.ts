@@ -55,7 +55,7 @@ function findPlayer(state: GameState, id: PlayerId): PlayerRecord | undefined {
 const areas: AreaRecord[] = [
   {
     id: "hermits_cabin" as AreaId,
-    name: "Cabane de lErmite",
+    name: "Cabane de l Ermite",
     description: "Piochez une carte Ermite.",
     domain: [2, 3],
     resourceId: "hermits-cabin",
@@ -87,7 +87,7 @@ const areas: AreaRecord[] = [
   },
   {
     id: "weird_woods" as AreaId,
-    name: "Bois Etrangers",
+    name: "Bois Etranges",
     description: "Soignez 1 degat ou infligez 2 degats a un joueur.",
     domain: [9],
     resourceId: "weird-woods",
@@ -114,7 +114,7 @@ const areas: AreaRecord[] = [
   },
   {
     id: "erstwhile_altar" as AreaId,
-    name: "Autel dAntan",
+    name: "Autel d Antan",
     description: "Volez un equipement a un joueur.",
     domain: [10],
     resourceId: "erstwhile-altar",
