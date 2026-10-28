@@ -49,11 +49,16 @@ export default function LobbyScreen({
 
   const handleStart = () => {
     setError('')
-    if (!canStart) {
-      setError(`Nombre de joueurs invalide (${total}, il faut 4 à 8)`)
+    const totalPlayers = Math.max(playerCount, total)
+    if (totalPlayers < 4 || totalPlayers > 8) {
+      setError(`Nombre de joueurs invalide (${totalPlayers}, il faut 4 à 8)`)
       return
     }
-    onStartGame({ playerCount: total, botCount: botCountCurrent })
+    if (totalPlayers < total) {
+      setError(`Le nombre choisi (${totalPlayers}) est inférieur au nombre de joueurs actuels (${total})`)
+      return
+    }
+    onStartGame({ playerCount: totalPlayers, botCount: 0 })
   }
 
   return (
@@ -78,7 +83,11 @@ export default function LobbyScreen({
           {isHost && (
             <div className="host-controls">
               <h3>Contrôles de l'hôte</h3>
-              <button onClick={onAddBot} disabled={total >= 9}>Ajouter un bot</button>
+              <label>Nombre de joueurs pour la partie :
+                <select value={playerCount} onChange={(e) => setPlayerCount(Number(e.target.value))}>
+                  {[4,5,6,7,8].map((n) => (<option key={n} value={n}>{n}</option>))}
+                </select>
+              </label>
               <p>Nombre total de joueurs : {total}</p>
             </div>
           )}

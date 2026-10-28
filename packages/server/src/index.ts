@@ -88,13 +88,32 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
     })
   }
 
-  // Vérifier doublon de pseudo (normalisé)
-  const existing = await prisma.lobbyPlayer.findFirst({
+  // Nettoyer les joueurs humains déconnectés si le lobby est plein
+  const connectedSessions = await prisma.session.findMany({
+    where: { lobbyId: lobby.id, connected: true },
+    select: { playerId: true },
+  })
+  const connectedIds = new Set(connectedSessions.map((s) => s.playerId))
+  const allPlayersNow = await prisma.lobbyPlayer.findMany({ where: { lobbyId: lobby.id } })
+  if (allPlayersNow.length >= 9) {
+    const toRemove = allPlayersNow.filter((p) => !p.isBot && !connectedIds.has(p.id))
+    for (const p of toRemove) {
+      await prisma.lobbyPlayer.delete({ where: { id: p.id } })
+    }
+  }
+
+  // Vérifier doublon de pseudo (normalisé) : réutiliser si déconnecté
+  let existing = await prisma.lobbyPlayer.findFirst({
     where: { lobbyId: lobby.id, userId: normalized },
   })
-  const uniqueCheck = validateUniqueName(normalized, !!existing)
-  if (!uniqueCheck.ok) {
-    return res.status(409).json({ error: uniqueCheck.error })
+  if (existing) {
+    const activeSession = await prisma.session.findFirst({
+      where: { playerId: existing.id, connected: true },
+    })
+    if (activeSession) {
+      return res.status(409).json({ error: 'Ce pseudo est déjà utilisé par un joueur connecté' })
+    }
+    await prisma.session.deleteMany({ where: { playerId: existing.id } })
   }
 
   // Vérifier capacité (max 9)
@@ -113,16 +132,25 @@ app.post('/api/join', authLimiter, async (req: Request, res: Response) => {
   const isHost = playerCount === 0 || !hostConnected
 
   const colors = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
-  const player = await prisma.lobbyPlayer.create({
-    data: {
-      lobbyId: lobby.id,
-      userId: normalized,
-      displayName: displayName.trim(),
-      number: playerCount + 1,
-      color: colors[playerCount] ?? '#FFFFFF',
-      isHost: isHost,
-    },
-  })
+
+  let player
+  if (existing) {
+    player = await prisma.lobbyPlayer.update({
+      where: { id: existing.id },
+      data: { displayName: displayName.trim(), isHost },
+    })
+  } else {
+    player = await prisma.lobbyPlayer.create({
+      data: {
+        lobbyId: lobby.id,
+        userId: normalized,
+        displayName: displayName.trim(),
+        number: playerCount + 1,
+        color: colors[playerCount] ?? '#FFFFFF',
+        isHost: isHost,
+      },
+    })
+  }
 
   if (isHost) {
     await prisma.lobby.update({ where: { id: lobby.id }, data: { hostId: normalized } })
