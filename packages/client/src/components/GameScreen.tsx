@@ -104,7 +104,9 @@ export default function GameScreen({
           {publicState?.players.map((p: any) => (
             <div key={p.id} className={`player-card ${p.state === 'dead' ? 'dead' : ''} ${p.id === player.userId ? 'me' : ''}`}>
               <span className="chip" style={{ backgroundColor: p.color }}>{p.number}</span>
-              <strong>{p.name}</strong>{p.isBot ? ' (bot)' : ''}
+              <strong style={{ color: (p.character?.revealed || p.id === player.userId) ? (p.character?.allegiance === 'shadow' ? '#ff6b6b' : p.character?.allegiance === 'hunter' ? '#4cc9f0' : '#f9c74f') : undefined }}>
+                {p.name}
+              </strong>{p.isBot ? ' (bot)' : ''}
               <div className="health">Dégâts: {p.damage}{p.maxDamage ? `/${p.maxDamage}` : ''}</div>
               <div className="state">État: {p.state === 'hidden' ? 'Secret' : p.state === 'revealed' ? 'Révélé' : 'Mort'}</div>
               <div className="character">
