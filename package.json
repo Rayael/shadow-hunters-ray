@@ -21,7 +21,7 @@
     "client:build": "cd packages/client && npm run build",
     "build": "npm run shared:build && npm run server:build && npm run client:build",
     "server:dev": "npm run shared:build && cd packages/server && npm run dev",
-    "server:start": "cd packages/server && npx prisma db push --accept-data-loss --skip-generate && npm start",
+    "server:start": "cd packages/server && npx prisma db push --accept-data-loss && npm start",
     "client:dev": "cd packages/client && npm run dev",
     "test:shared": "cd packages/shared && npx vitest run",
     "test:server": "cd packages/server && npx vitest run",
