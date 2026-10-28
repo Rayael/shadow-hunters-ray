@@ -45,7 +45,7 @@ model Session {
   lobbyId   String
   lobby     Lobby    @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
   playerId  String
-  player    LobbyPlayer @relation(fields: [playerId], references: [id])
+  player    LobbyPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
   socketId  String?
   connected Boolean  @default(true)
   expiresAt DateTime
