@@ -65,10 +65,20 @@ export default function GameScreen({
   const myNumber = publicState?.players.find((p: any) => p.id === player.userId)?.number
   const myPublic = publicState?.players.find((p: any) => p.id === player.userId)
   const isRevealed = myPublic?.state === 'revealed'
-  const [selectedTarget, setSelectedTarget] = useState<string>('')
+  const [selectedTarget, setSelectedTarget] = useState<string>('') // retained for compatibility
+const [attackChoosing, setAttackChoosing] = useState(false)
+const [areaDamageChoosing, setAreaDamageChoosing] = useState(false)
+const [areaStealChoosing, setAreaStealChoosing] = useState(false)
+const [cardChoosing, setCardChoosing] = useState<string | null>(null)
   const [chatMessages, setChatMessages] = useState<{ from: string; text: string; at: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [hoveredCard, setHoveredCard] = useState<any>(null)
+  useEffect(() => {
+    setAttackChoosing(false)
+    setAreaDamageChoosing(false)
+    setAreaStealChoosing(false)
+    setCardChoosing(null)
+  }, [publicState?.turnPlayerId, publicState?.phase])
   const allCards = getAllCards()
 
   useEffect(() => {
@@ -189,17 +199,21 @@ export default function GameScreen({
                   >
                     {c.emoji || (c.type === 'white' ? '?' : c.type === 'black' ? '?' : '??')} {c.title}
                   </span>
-                  <button onClick={() => onAction({ type: 'use_card', payload: { cardId: c.id, targetId: selectedTarget || undefined } })}>
-                    Utiliser
-                  </button>
+                  {cardChoosing === c.id ? (
+                    <div>
+                      <button onClick={() => { onAction({ type: 'use_card', payload: { cardId: c.id } }); setCardChoosing(null) }}>Sans cible</button>
+                      {publicState?.players?.filter((p: any) => p.id !== player.userId && p.state !== 'dead').map((p: any) => (
+                        <button key={p.id} onClick={() => { onAction({ type: 'use_card', payload: { cardId: c.id, targetId: p.id } }); setCardChoosing(null) }}>
+                          {p.name || p.id}
+                        </button>
+                      ))}
+                      <button onClick={() => setCardChoosing(null)}>Retour</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setCardChoosing(c.id)}>Utiliser</button>
+                  )}
                 </div>
               ))}
-              <select value={selectedTarget} onChange={(e) => setSelectedTarget(e.target.value)}>
-                <option value="">(cible optionnelle)</option>
-                {publicState?.players?.filter((p: any) => p.id !== player.userId && p.state !== 'dead').map((p: any) => (
-                  <option key={p.id} value={p.id}>{p.name || p.id}</option>
-                ))}
-              </select>
             </div>
           )}
           </div>
@@ -220,18 +234,63 @@ export default function GameScreen({
                 </div>
               )}
               {publicState?.availableActions.includes('use_area_action') && (
-                <div>
-                  <button onClick={() => onAction({ type: 'use_area_action', payload: { targetId: selectedTarget || undefined } })}>
-                    Utiliser l'action du lieu
-                  </button>
-                  <select value={selectedTarget} onChange={(e) => setSelectedTarget(e.target.value)}>
-                    <option value="">(aucune cible)</option>
-                    {publicState?.players
-                      ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
-                      .map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.name || p.id}</option>
-                      ))}
-                  </select>
+                <div className="area-actions">
+                  <p>Action du lieu :</p>
+                  {myPublic?.location === 'hermits_cabin' && (
+                    <button onClick={() => onAction({ type: 'use_area_action', payload: {} })}>Piocher une carte Ermite</button>
+                  )}
+                  {myPublic?.location === 'church' && (
+                    <button onClick={() => onAction({ type: 'use_area_action', payload: {} })}>Piocher une carte Blanche</button>
+                  )}
+                  {myPublic?.location === 'cemetery' && (
+                    <button onClick={() => onAction({ type: 'use_area_action', payload: {} })}>Piocher une carte Noire</button>
+                  )}
+                  {myPublic?.location === 'underworld_gate' && (
+                    <>
+                      <button onClick={() => onAction({ type: 'use_area_action', payload: { choice: 'white' } })}>Piocher Blanc</button>
+                      <button onClick={() => onAction({ type: 'use_area_action', payload: { choice: 'black' } })}>Piocher Noir</button>
+                      <button onClick={() => onAction({ type: 'use_area_action', payload: { choice: 'hermit' } })}>Piocher Ermite</button>
+                    </>
+                  )}
+                  {myPublic?.location === 'weird_woods' && (
+                    <>
+                      <button onClick={() => onAction({ type: 'use_area_action', payload: {} })}>Soigner 1 dégât</button>
+                      {areaDamageChoosing ? (
+                        <>
+                          <p>Infliger 2 dégâts à :</p>
+                          {publicState?.players
+                            ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
+                            .map((p: any) => (
+                              <button key={p.id} onClick={() => { onAction({ type: 'use_area_action', payload: { targetId: p.id } }); setAreaDamageChoosing(false) }}>
+                                {p.name || p.id}
+                              </button>
+                            ))}
+                          <button onClick={() => setAreaDamageChoosing(false)}>Retour</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setAreaDamageChoosing(true)}>Infliger 2 dégâts à un joueur...</button>
+                      )}
+                    </>
+                  )}
+                  {myPublic?.location === 'erstwhile_altar' && (
+                    <>
+                      {areaStealChoosing ? (
+                        <>
+                          <p>Voler un équipement à :</p>
+                          {publicState?.players
+                            ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
+                            .map((p: any) => (
+                              <button key={p.id} onClick={() => { onAction({ type: 'use_area_action', payload: { targetId: p.id } }); setAreaStealChoosing(false) }}>
+                                {p.name || p.id}
+                              </button>
+                            ))}
+                          <button onClick={() => setAreaStealChoosing(false)}>Retour</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setAreaStealChoosing(true)}>Voler un équipement...</button>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
               {publicState?.availableActions.includes('decline_area_action') && (
@@ -239,28 +298,46 @@ export default function GameScreen({
               )}
               {publicState?.availableActions.includes('attack_player') && (
                 <div>
-                  <p>Attaquer :</p>
-                  {publicState?.players
-                    ?.filter((p: any) => {
-                      if (p.id === player.userId || p.state === 'dead') return false
-                      const myLoc = myPublic?.location
-                      const paired = publicState?.areaPairs?.find((pair: any) => pair[0] === myLoc)?.[1] || publicState?.areaPairs?.find((pair: any) => pair[1] === myLoc)?.[0]
-                      return p.location === myLoc || p.location === paired
-                    })
-                    .map((p: any) => (
-                      <button key={p.id} onClick={() => onAction({ type: 'attack_player', payload: { targetId: p.id } })}>
-                        {p.name || p.id}
-                      </button>
-                    ))}
+                  {!attackChoosing ? (
+                    <button onClick={() => setAttackChoosing(true)}>Attaquer</button>
+                  ) : (
+                    <>
+                      <p>Choisir une cible :</p>
+                      {publicState?.players
+                        ?.filter((p: any) => {
+                          if (p.id === player.userId || p.state === 'dead') return false
+                          const myLoc = myPublic?.location
+                          const paired = publicState?.areaPairs?.find((pair: any) => pair[0] === myLoc)?.[1] || publicState?.areaPairs?.find((pair: any) => pair[1] === myLoc)?.[0]
+                          return p.location === myLoc || p.location === paired
+                        })
+                        .map((p: any) => (
+                          <button key={p.id} onClick={() => { onAction({ type: 'attack_player', payload: { targetId: p.id } }); setAttackChoosing(false) }}>
+                            {p.name || p.id}
+                          </button>
+                        ))}
+                      <button onClick={() => setAttackChoosing(false)}>Retour</button>
+                    </>
+                  )}
                 </div>
               )}
               {publicState?.availableActions.includes('decline_attack') && (
                 <button onClick={() => onAction({ type: 'decline_attack', payload: {} })}>Refuser l'attaque</button>
               )}
               {publicState?.availableActions.includes('use_special') && (
-                <button onClick={() => onAction({ type: 'use_special', payload: { targetId: selectedTarget || undefined } })}>
-                  Capacité spéciale
-                </button>
+                <div>
+                  <p>Capacité spéciale :</p>
+                  <button onClick={() => onAction({ type: 'use_special', payload: {} })}>Sans cible</button>
+                  {publicState?.players
+                    ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
+                    .map((p: any) => (
+                      <button key={p.id} onClick={() => onAction({ type: 'use_special', payload: { targetId: p.id } })}>
+                        {p.name || p.id}
+                      </button>
+                    ))}
+                </div>
+              )}
+              {(attackChoosing || areaDamageChoosing || areaStealChoosing || cardChoosing) && (
+                <button onClick={() => { setAttackChoosing(false); setAreaDamageChoosing(false); setAreaStealChoosing(false); setCardChoosing(null) }}>Retour</button>
               )}
               {publicState?.availableActions.includes('end_turn') && (
                 <button onClick={() => onAction({ type: 'end_turn', payload: {} })}>Fin de tour</button>

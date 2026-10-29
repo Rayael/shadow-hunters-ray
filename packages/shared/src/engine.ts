@@ -293,7 +293,7 @@ export class GameEngine {
     player.location = areaId
   }
 
-  useAreaAction(actorId: PlayerId, targetId?: PlayerId): { events: GameEvent[] } {
+  useAreaAction(actorId: PlayerId, targetId?: PlayerId, choice?: string): { events: GameEvent[] } {
     if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
     const player = this.state.players.get(actorId)
     if (!player || !player.location) throw new Error('Vous n\'êtes sur aucun lieu')
@@ -301,7 +301,7 @@ export class GameEngine {
     if (!area) throw new Error('Lieu inconnu')
     this.state.phase = Phase.AreaAction
     this.state.availableActions = []
-    const result = area.action(this.state, player, targetId)
+    const result = area.action(this.state, player, targetId, choice)
     const events: GameEvent[] = result.events ?? []
     if (result.message) {
       events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: result.message } })
@@ -486,6 +486,7 @@ export class GameEngine {
     const player = this.state.players.get(actorId)
     if (!player) throw new Error('Joueur introuvable')
     if (player.state === PlayerState.Dead) throw new Error('Un joueur mort ne peut pas se révéler')
+if (this.state.gameOver) throw new Error('La partie est terminée')
     if (player.state === PlayerState.Revealed) throw new Error('Vous êtes déjà révélé')
     player.state = PlayerState.Revealed
     const characterId = this.state.characterAssignments.get(actorId)
@@ -592,19 +593,19 @@ export class GameEngine {
     const tp = this.state.turnPlayerId
     if (!tp) { this.state.availableActions = []; return }
     switch (this.state.phase) {
-      case Phase.TurnStart: this.triggerStartSpecials(tp); this.state.availableActions = [ActionType.RollDie]; break
+      case Phase.TurnStart: this.triggerStartSpecials(tp); this.state.availableActions = [ActionType.RollDie, ActionType.UseCard, ActionType.UseSpecial]; break
       case Phase.Movement:
         this.state.availableActions = this.state.currentRoll === 7
-          ? [ActionType.ChooseArea]
-          : [ActionType.UseAreaAction, ActionType.DeclineAreaAction, ActionType.EndTurn]
+          ? [ActionType.ChooseArea, ActionType.UseCard, ActionType.UseSpecial]
+          : [ActionType.UseAreaAction, ActionType.DeclineAreaAction, ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]
         break
       case Phase.AreaAction:
-        this.state.availableActions = [ActionType.UseAreaAction, ActionType.DeclineAreaAction]
+        this.state.availableActions = [ActionType.UseAreaAction, ActionType.DeclineAreaAction, ActionType.UseCard, ActionType.UseSpecial]
         break
       case Phase.Attack:
-        this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn]
+        this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]
         break
-      case Phase.TurnEnd: this.state.availableActions = [ActionType.EndTurn]; break
+      case Phase.TurnEnd: this.state.availableActions = [ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]; break
       default: this.state.availableActions = []
     }
   }

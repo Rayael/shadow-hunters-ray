@@ -52,8 +52,36 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
 
     await new Promise((r) => setTimeout(r, BOT_THINK_MS))
 
-    if (engine.canExecute(bot.id, ActionType.UseAreaAction)) {
-      engine.useAreaAction(bot.id)
+if (engine.canExecute(bot.id, ActionType.UseAreaAction)) {
+      const botPlayer = engine.state.players.get(bot.id)
+      const areaId = botPlayer?.location
+      if (areaId === 'weird_woods') {
+        // sometimes heal, sometimes damage a random player
+        if (Math.random() < 0.5) {
+          engine.useAreaAction(bot.id)
+        } else {
+          const targets = Array.from(engine.state.players.values()).filter((p) => p.id !== bot.id && p.state !== 'dead')
+          if (targets.length > 0) {
+            const t = targets[Math.floor(Math.random() * targets.length)]
+            engine.useAreaAction(bot.id, t.id)
+          } else {
+            engine.useAreaAction(bot.id)
+          }
+        }
+      } else if (areaId === 'erstwhile_altar') {
+        const targets = Array.from(engine.state.players.values()).filter((p) => p.id !== bot.id && p.state !== 'dead')
+        if (targets.length > 0) {
+          const t = targets[Math.floor(Math.random() * targets.length)]
+          engine.useAreaAction(bot.id, t.id)
+        } else {
+          engine.declineAreaAction(bot.id)
+        }
+      } else if (areaId === 'underworld_gate') {
+        const choices = ['white', 'black', 'hermit']
+        engine.useAreaAction(bot.id, undefined, choices[Math.floor(Math.random() * choices.length)])
+      } else {
+        engine.useAreaAction(bot.id)
+      }
       await broadcastGameState(io, engine, lobbyId)
     } else if (engine.canExecute(bot.id, ActionType.DeclineAreaAction)) {
       engine.declineAreaAction(bot.id)
@@ -65,8 +93,10 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
     if (engine.canExecute(bot.id, ActionType.AttackPlayer)) {
       const botPlayer = engine.state.players.get(bot.id)
       const allPlayers = Array.from(engine.state.players.values())
+      const pairedArea = botPlayer?.location ? engine.state.areaPairs.get(botPlayer.location as any) : undefined
       const targets = allPlayers.filter(
-        (p: { id: PlayerId; state: string; location: string | null }) => p.id !== bot.id && p.state !== 'dead' && p.location === botPlayer?.location
+        (p: { id: PlayerId; state: string; location: string | null }) => p.id !== bot.id && p.state !== 'dead' &&
+          (p.location === botPlayer?.location || (pairedArea !== undefined && p.location === pairedArea))
       )
       if (targets.length > 0) {
         const target = targets[Math.floor(Math.random() * targets.length)]

@@ -200,7 +200,7 @@ export interface AreaRecord {
   description: string
   domain: number[]
   resourceId: string
-  action: (state: GameState, player: PlayerRecord, targetId?: PlayerId) => SpecialResult
+  action: (state: GameState, player: PlayerRecord, targetId?: PlayerId, choice?: string) => SpecialResult
 }
 
 export interface PlayerPublicView {

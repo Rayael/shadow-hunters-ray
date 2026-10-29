@@ -229,7 +229,7 @@ export const HUNTERS: CharacterRecord[] = [
     winCondition: hunterWinCondition,
     winConditionDesc: 'Toutes les Ombres sont mortes.',
     special: (state, player, ctx) => {
-      if (ctx.type === 'start' && ctx.target) {
+      if ((ctx.type === 'start' || ctx.type === 'now') && ctx.target) {
         const target = state.players.get(ctx.target)
         if (!target || target.state === PlayerState.Dead) return { success: false, message: 'Cible invalide.' }
         const roll = Math.floor(Math.random() * 4) + 1
@@ -248,7 +248,7 @@ export const HUNTERS: CharacterRecord[] = [
     winCondition: hunterWinCondition,
     winConditionDesc: 'Toutes les Ombres sont mortes.',
     special: (state, player, ctx) => {
-      if (ctx.type === 'start' && ctx.target) {
+      if ((ctx.type === 'start' || ctx.type === 'now') && ctx.target) {
         const target = state.players.get(ctx.target)
         if (!target || target.state === PlayerState.Dead) return { success: false, message: 'Cible invalide.' }
         target.damage = 7
@@ -269,7 +269,7 @@ export const HUNTERS: CharacterRecord[] = [
     winCondition: hunterWinCondition,
     winConditionDesc: 'Toutes les Ombres sont mortes.',
     special: (state, player, ctx) => {
-      if (ctx.type === 'start' && ctx.target) {
+      if ((ctx.type === 'start' || ctx.type === 'now') && ctx.target) {
         const target = state.players.get(ctx.target)
         if (!target || target.state === PlayerState.Dead) return { success: false, message: 'Cible invalide.' }
         const roll = Math.floor(Math.random() * 6) + 1
@@ -288,7 +288,7 @@ export const HUNTERS: CharacterRecord[] = [
     winCondition: hunterWinCondition,
     winConditionDesc: 'Toutes les Ombres sont mortes.',
     special: (state, player, ctx) => {
-      if (ctx.type === 'start' && ctx.target) {
+      if ((ctx.type === 'start' || ctx.type === 'now') && ctx.target) {
         const target = state.players.get(ctx.target)
         if (!target) return { success: false, message: 'Cible invalide.' }
         const cid = state.characterAssignments.get(target.id)

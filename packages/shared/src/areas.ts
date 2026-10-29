@@ -61,13 +61,19 @@ const areas: AreaRecord[] = [
     resourceId: "hermits-cabin",
     action: (state, player) => drawCardAction(state, player, CardType.Hermit),
   },
-  {
+{
     id: "underworld_gate" as AreaId,
     name: "Porte des Enfers",
     description: "Piochez une carte dans le deck de votre choix.",
     domain: [4, 5],
     resourceId: "underworld-gate",
-    action: (state, player) => drawCardAction(state, player, CardType.White),
+    action: (state, player, _targetId, choice) => {
+      const type = choice === 'black' ? CardType.Black : choice === 'hermit' ? CardType.Hermit : choice === 'white' ? CardType.White : null
+      if (!type) {
+        return { success: false, message: "Choisissez un deck (blanc, noir ou ermite)." }
+      }
+      return drawCardAction(state, player, type)
+    },
   },
   {
     id: "church" as AreaId,

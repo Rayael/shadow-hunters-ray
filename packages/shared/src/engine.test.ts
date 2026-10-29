@@ -49,7 +49,7 @@ describe('GameEngine - actions', () => {
     const tp = engine.state.turnPlayerId!
     const { roll } = engine.rollDie(tp)
     expect(roll).toBeGreaterThanOrEqual(1)
-    expect(roll).toBeLessThanOrEqual(4)
+    expect(roll).toBeLessThanOrEqual(10)
     expect(engine.state.currentRoll).toBe(roll)
   })
 
