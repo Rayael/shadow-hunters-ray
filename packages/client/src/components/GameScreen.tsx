@@ -31,7 +31,7 @@ function formatEvent(e: any, state: any): string {
     case 'turn_start':
       return `Tour de ${name(e.data?.turnPlayerId || e.actor)}`
     case 'attack':
-      return `${name(e.actor)} attaque ${name(e.data?.target)}`
+      return `${name(e.actor)} attaque ${name(e.target || e.data?.target)}`
     case 'equipment_stolen':
       return `${name(e.actor)} vole un équipement à ${name(e.data?.from)}`
     default:
@@ -308,7 +308,9 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
                           if (p.id === player.userId || p.state === 'dead') return false
                           const myLoc = myPublic?.location
                           const paired = publicState?.areaPairs?.find((pair: any) => pair[0] === myLoc)?.[1] || publicState?.areaPairs?.find((pair: any) => pair[1] === myLoc)?.[0]
-                          return p.location === myLoc || p.location === paired
+                          const hasHandgun = (privateView?.fullEquipment || []).some((c: any) => c.id === 'handgun')
+                          const sameOrPaired = p.location === myLoc || p.location === paired
+                          return hasHandgun ? !sameOrPaired : sameOrPaired
                         })
                         .map((p: any) => (
                           <button key={p.id} onClick={() => { onAction({ type: 'attack_player', payload: { targetId: p.id } }); setAttackChoosing(false) }}>

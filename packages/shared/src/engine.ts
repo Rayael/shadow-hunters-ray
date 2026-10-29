@@ -349,6 +349,7 @@ export class GameEngine {
     if (!cid) throw new Error('Vous n\'avez pas de personnage attribué')
     const character = this.state.charactersPool.find((c) => c.id === cid)
     if (!character) throw new Error('Personnage introuvable')
+if (character.specialUsed) throw new Error('Capacité spéciale déjà utilisée')
     const context: SpecialContext = { type: 'now', target: targetId }
     const result = character.special(this.state, player, context)
     if (!result.success) throw new Error(result.message || 'La capacité spéciale ne peut pas être utilisée maintenant')
@@ -382,16 +383,30 @@ export class GameEngine {
     const target = this.state.players.get(targetId)
     if (!actor || !target) throw new Error('Joueur introuvable')
     if (target.state === PlayerState.Dead) throw new Error('Le joueur cible est déjà mort')
+    const hasMasamune = actor.equipment.includes('cursed_sword_masamune' as any)
+    const hasHandgun = actor.equipment.includes('handgun' as any)
+    const hasSpear = actor.equipment.includes('spear_of_longinus' as any)
+
     const pairedArea = actor.location ? this.state.areaPairs.get(actor.location) : undefined
-    if (actor.location !== target.location && pairedArea !== target.location) {
+    const sameOrPaired = actor.location === target.location || (pairedArea !== undefined && pairedArea === target.location)
+    const inRange = hasHandgun ? !sameOrPaired : sameOrPaired
+    if (!inRange) {
       throw new Error('Vous devez être sur le même lieu ou le lieu pair pour attaquer')
     }
-    const dieSides = 4
-    const roll = Math.floor(Math.random() * dieSides) + 1
-    const damage = roll >= 4 ? 1 : 0
+
+    const r4 = Math.floor(Math.random() * 4) + 1
+    const r6 = hasMasamune ? 0 : Math.floor(Math.random() * 6) + 1
+    let damage = hasMasamune ? r4 : Math.abs(r4 - r6)
+
+    const cid = this.state.characterAssignments.get(actorId)
+    const ch = cid ? this.state.charactersPool.find((c) => c.id === cid) : null
+    if (damage > 0 && hasSpear && ch?.allegiance === 'hunter' && actor.state === PlayerState.Revealed) {
+      damage += 2
+    }
+
     this.state.availableActions = []
     const events: GameEvent[] = [
-      { type: 'attack', timestamp: now(), actor: actorId, target: targetId, data: { roll, dieSides } },
+      { type: 'attack', timestamp: now(), actor: actorId, target: targetId, data: { roll: damage, r4, r6, target: targetId } },
     ]
     if (damage > 0) {
       this.applyDamage(targetId, damage, actorId)
@@ -593,19 +608,19 @@ if (this.state.gameOver) throw new Error('La partie est terminée')
     const tp = this.state.turnPlayerId
     if (!tp) { this.state.availableActions = []; return }
     switch (this.state.phase) {
-      case Phase.TurnStart: this.triggerStartSpecials(tp); this.state.availableActions = [ActionType.RollDie, ActionType.UseCard, ActionType.UseSpecial]; break
+      case Phase.TurnStart: this.triggerStartSpecials(tp); this.state.availableActions = [ActionType.RollDie]; break
       case Phase.Movement:
         this.state.availableActions = this.state.currentRoll === 7
-          ? [ActionType.ChooseArea, ActionType.UseCard, ActionType.UseSpecial]
-          : [ActionType.UseAreaAction, ActionType.DeclineAreaAction, ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]
+          ? [ActionType.ChooseArea]
+          : [ActionType.UseAreaAction, ActionType.DeclineAreaAction, ActionType.EndTurn]
         break
       case Phase.AreaAction:
-        this.state.availableActions = [ActionType.UseAreaAction, ActionType.DeclineAreaAction, ActionType.UseCard, ActionType.UseSpecial]
+        this.state.availableActions = [ActionType.UseAreaAction, ActionType.DeclineAreaAction]
         break
       case Phase.Attack:
         this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]
         break
-      case Phase.TurnEnd: this.state.availableActions = [ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]; break
+      case Phase.TurnEnd: this.state.availableActions = [ActionType.EndTurn]; break
       default: this.state.availableActions = []
     }
   }
