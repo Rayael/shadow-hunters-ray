@@ -115,8 +115,8 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
         <aside className="players-panel">
           <h2>Joueurs</h2>
           {publicState?.players.map((p: any) => (
-            <div key={p.id} className={`player-card ${p.state === 'dead' ? 'dead' : ''} ${p.id === player.userId ? 'me' : ''}`}>
-              <span className="chip" style={{ backgroundColor: p.color }}>{p.number}</span>
+            <div key={p.id} className={`player-card ${p.state === 'dead' ? 'dead' : ''} ${p.id === player.userId ? 'me' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 8, marginBottom: 8 }}>
+              <span className="chip" style={{ backgroundColor: p.color, marginRight: 8, marginLeft: 2 }}>{p.number}</span>
               <strong style={{ color: (p.character?.revealed || p.id === player.userId) ? (p.character?.allegiance === 'shadow' ? '#ff6b6b' : p.character?.allegiance === 'hunter' ? '#4cc9f0' : '#f9c74f') : undefined }}>
                 {p.name}
               </strong>{p.isBot ? ' (bot)' : ''}
@@ -170,7 +170,6 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
               const areas = ids.map((id: string) => publicState?.areas?.find((a: any) => a.id === id)).filter(Boolean)
               return (
                 <div key={idx} className="area-pair" style={{ border: '2px solid #888', borderRadius: 8, padding: 8, margin: 8, display: 'inline-block', verticalAlign: 'top' }}>
-                  <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Portée d'attaque {idx + 1}</div>
                   {areas.map((area: any) => (
                     <div key={area.id} className="area" style={{ backgroundColor: `hsl(${(area.id.charCodeAt(0) * 47) % 360}, 35%, 22%)`, margin: 4, padding: 6, borderRadius: 6 }}>
                       <div className="area-name">{area.name}</div>

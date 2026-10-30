@@ -336,8 +336,8 @@ export class GameEngine {
     events.push({ type: 'card_used', timestamp: now(), actor: actorId, target: targetId, data: { card: card.title, cardId: card.id, type: card.type } })
     this.state.eventLog.push(...events)
     this.checkWinConditions()
-    this.state.availableActions = [ActionType.EndTurn]
-    this.state.phase = Phase.TurnEnd
+    this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]
+    this.state.phase = Phase.Attack
     return { events }
   }
 
