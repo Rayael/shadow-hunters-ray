@@ -82,7 +82,7 @@ export class GameEngine {
       charactersPool: getDefaultCharacterPool(),
       cardsDeck: { white: whiteDeck, black: blackDeck, hermit: hermitDeck },
       cardsDiscard: { white: [], black: [], hermit: [] },
-      areas: areasMap, areaPairs, currentRoll: null, availableActions: [],
+      areas: areasMap, areaPairs, currentRoll: null, availableActions: [], interruptedBy: null,
       eventLog: [{ type: 'message', timestamp: now(), data: { text: 'Partie créée.' } }],
       gameOver: false, winners: [],
       config: { playerCount, botCount: players.filter((p) => p.isBot).length, factionCounts },
@@ -147,7 +147,7 @@ export class GameEngine {
       eventLog: this.state.eventLog,
       areaPairs: Array.from(this.state.areaPairs.entries()),
       gameOver: this.state.gameOver, winners: this.state.winners,
-      availableActions: this.state.availableActions, currentRoll: this.state.currentRoll,
+      availableActions: this.state.availableActions, currentRoll: this.state.currentRoll, interruptedBy: this.state.interruptedBy,
     }
   }
 
@@ -344,12 +344,14 @@ export class GameEngine {
   useSpecial(actorId: PlayerId, targetId?: PlayerId): { events: GameEvent[] } {
     const player = this.state.players.get(actorId)
     if (!player) throw new Error('Joueur introuvable')
-    if (this.state.turnPlayerId !== actorId) throw new Error('Ce n\'est pas votre tour')
+    if (player.state === PlayerState.Dead) throw new Error('Un joueur mort ne peut pas utiliser sa capacité')
+    if (this.state.gameOver) throw new Error('La partie est terminée')
+    const isOutOfTurn = this.state.turnPlayerId !== actorId
     const cid = this.state.characterAssignments.get(actorId)
     if (!cid) throw new Error('Vous n\'avez pas de personnage attribué')
     const character = this.state.charactersPool.find((c) => c.id === cid)
     if (!character) throw new Error('Personnage introuvable')
-if (character.specialUsed) throw new Error('Capacité spéciale déjà utilisée')
+    if (character.specialUsed) throw new Error('Capacité spéciale déjà utilisée')
     const context: SpecialContext = { type: 'now', target: targetId }
     const result = character.special(this.state, player, context)
     if (!result.success) throw new Error(result.message || 'La capacité spéciale ne peut pas être utilisée maintenant')
@@ -357,11 +359,20 @@ if (character.specialUsed) throw new Error('Capacité spéciale déjà utilisée
     if (result.message) {
       events.push({ type: 'message', timestamp: now(), actor: actorId, target: targetId, data: { text: result.message } })
     }
-    events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: `${player.name} utilise sa capacité spéciale.` } })
+    if (isOutOfTurn) {
+      events.unshift({ type: 'interrupt', timestamp: now(), actor: actorId, data: { text: `${player.name} utilise sa capacité spéciale en interrompant le tour en cours !` } })
+      this.state.interruptedBy = actorId
+    } else {
+      events.push({ type: 'message', timestamp: now(), actor: actorId, data: { text: `${player.name} utilise sa capacité spéciale.` } })
+    }
     this.state.eventLog.push(...events)
     this.checkWinConditions()
-    this.state.availableActions = [ActionType.EndTurn]
-    this.state.phase = Phase.TurnEnd
+    if (isOutOfTurn) {
+      this.state.interruptedBy = null
+    } else {
+      this.state.availableActions = [ActionType.EndTurn]
+      this.state.phase = Phase.TurnEnd
+    }
     return { events }
   }
 
@@ -501,17 +512,26 @@ if (character.specialUsed) throw new Error('Capacité spéciale déjà utilisée
     const player = this.state.players.get(actorId)
     if (!player) throw new Error('Joueur introuvable')
     if (player.state === PlayerState.Dead) throw new Error('Un joueur mort ne peut pas se révéler')
-if (this.state.gameOver) throw new Error('La partie est terminée')
+    if (this.state.gameOver) throw new Error('La partie est terminée')
     if (player.state === PlayerState.Revealed) throw new Error('Vous êtes déjà révélé')
+    const isOutOfTurn = this.state.turnPlayerId !== actorId
     player.state = PlayerState.Revealed
     const characterId = this.state.characterAssignments.get(actorId)
     const character = characterId ? this.state.charactersPool.find((c) => c.id === characterId) : null
     const events: GameEvent[] = [
       { type: 'reveal', timestamp: now(), actor: actorId, data: { player: actorId, character: character?.name ?? null } },
-      { type: 'message', timestamp: now(), data: { text: `${player.name} a révélé son identité : ${character?.name ?? '?'}.` } },
     ]
+    if (isOutOfTurn) {
+      events.unshift({ type: 'interrupt', timestamp: now(), actor: actorId, data: { text: `${player.name} révèle son identité (${character?.name ?? '?'}) en interrompant le tour en cours !` } })
+      this.state.interruptedBy = actorId
+    } else {
+      events.push({ type: 'message', timestamp: now(), data: { text: `${player.name} a révélé son identité : ${character?.name ?? '?'}.` } })
+    }
     this.state.eventLog.push(...events)
     this.checkWinConditions()
+    if (isOutOfTurn) {
+      this.state.interruptedBy = null
+    }
     return { events }
   }
 

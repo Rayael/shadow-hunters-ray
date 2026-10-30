@@ -30,10 +30,10 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
   const room = `game:${lobbyId}`
 
   if (bot.state === 'hidden' && Math.random() < 0.3) {
-    if (engine.canExecute(bot.id, ActionType.Reveal)) {
+    try {
       engine.revealCharacter(bot.id)
       await broadcastGameState(io, engine, lobbyId)
-    }
+    } catch (e) {}
   }
 
   if (engine.canExecute(bot.id, ActionType.RollDie)) {

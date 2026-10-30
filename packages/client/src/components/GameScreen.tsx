@@ -32,6 +32,8 @@ function formatEvent(e: any, state: any): string {
       return `Tour de ${name(e.data?.turnPlayerId || e.actor)}`
     case 'attack':
       return `${name(e.actor)} attaque ${name(e.target || e.data?.target)}`
+    case 'interrupt':
+      return e.data?.text || 'Interruption'
     case 'equipment_stolen':
       return `${name(e.actor)} vole un équipement à ${name(e.data?.from)}`
     default:
@@ -70,6 +72,7 @@ const [attackChoosing, setAttackChoosing] = useState(false)
 const [areaDamageChoosing, setAreaDamageChoosing] = useState(false)
 const [areaStealChoosing, setAreaStealChoosing] = useState(false)
 const [cardChoosing, setCardChoosing] = useState<string | null>(null)
+const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || !!cardChoosing
   const [chatMessages, setChatMessages] = useState<{ from: string; text: string; at: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [hoveredCard, setHoveredCard] = useState<any>(null)
@@ -162,18 +165,27 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
 
         <main className="board-area">
           <div className="board">
-            {publicState?.areas.map((area: any) => (
-              <div key={area.id} className="area" style={{ backgroundColor: `hsl(${(area.id.charCodeAt(0) * 47) % 360}, 35%, 22%)` }}>
-                <div className="area-name">{area.name}</div>
-                <div className="area-domain">Dé: {area.domain.join(', ')}</div>
-                <div className="area-players">
-                  {area.playersHere.map((pid: any) => {
-                    const pl = publicState.players.find((p: any) => p.id === pid)
-                    return <span key={pid} className="pion" style={{ backgroundColor: pl?.color }}>{pl?.number}</span>
-                  })}
+            {(publicState?.areaPairs || []).map((pair: any, idx: number) => {
+              const ids = Array.isArray(pair) ? pair : [pair[0], pair[1]]
+              const areas = ids.map((id: string) => publicState?.areas?.find((a: any) => a.id === id)).filter(Boolean)
+              return (
+                <div key={idx} className="area-pair" style={{ border: '2px solid #888', borderRadius: 8, padding: 8, margin: 8, display: 'inline-block', verticalAlign: 'top' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Portée d'attaque {idx + 1}</div>
+                  {areas.map((area: any) => (
+                    <div key={area.id} className="area" style={{ backgroundColor: `hsl(${(area.id.charCodeAt(0) * 47) % 360}, 35%, 22%)`, margin: 4, padding: 6, borderRadius: 6 }}>
+                      <div className="area-name">{area.name}</div>
+                      <div className="area-domain">Dé: {area.domain.join(', ')}</div>
+                      <div className="area-players">
+                        {area.playersHere.map((pid: any) => {
+                          const pl = publicState.players.find((p: any) => p.id === pid)
+                          return <span key={pid} className="pion" style={{ backgroundColor: pl?.color }}>{pl?.number}</span>
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="my-character">
@@ -220,10 +232,10 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
           {isMyTurn && (
             <div className="actions-panel">
               <h3>Actions disponibles</h3>
-              {publicState?.availableActions.includes('roll_die') && (
+              {!isChoosing && publicState?.availableActions.includes('roll_die') && (
                 <button onClick={() => onAction({ type: 'roll_die', payload: {} })}>Lancer le dé</button>
               )}
-              {publicState?.availableActions.includes('choose_area') && (
+              {!isChoosing && publicState?.availableActions.includes('choose_area') && (
                 <div>
                   <p>Choisir un lieu :</p>
                   {publicState?.areas?.map((a: any) => (
@@ -233,7 +245,7 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
                   ))}
                 </div>
               )}
-              {publicState?.availableActions.includes('use_area_action') && (
+              {(!isChoosing || areaDamageChoosing || areaStealChoosing) && publicState?.availableActions.includes('use_area_action') && (
                 <div className="area-actions">
                   <p>Action du lieu :</p>
                   {myPublic?.location === 'hermits_cabin' && (
@@ -293,10 +305,10 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
                   )}
                 </div>
               )}
-              {publicState?.availableActions.includes('decline_area_action') && (
+              {!isChoosing && publicState?.availableActions.includes('decline_area_action') && (
                 <button onClick={() => onAction({ type: 'decline_area_action', payload: {} })}>Refuser le lieu</button>
               )}
-              {publicState?.availableActions.includes('attack_player') && (
+              {(!isChoosing || attackChoosing) && publicState?.availableActions.includes('attack_player') && (
                 <div>
                   {!attackChoosing ? (
                     <button onClick={() => setAttackChoosing(true)}>Attaquer</button>
@@ -322,10 +334,10 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
                   )}
                 </div>
               )}
-              {publicState?.availableActions.includes('decline_attack') && (
+              {!isChoosing && publicState?.availableActions.includes('decline_attack') && (
                 <button onClick={() => onAction({ type: 'decline_attack', payload: {} })}>Refuser l'attaque</button>
               )}
-              {publicState?.availableActions.includes('use_special') && (
+              {!isChoosing && publicState?.availableActions.includes('use_special') && (
                 <div>
                   <p>Capacité spéciale :</p>
                   <button onClick={() => onAction({ type: 'use_special', payload: {} })}>Sans cible</button>
@@ -341,8 +353,21 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
               {(attackChoosing || areaDamageChoosing || areaStealChoosing || cardChoosing) && (
                 <button onClick={() => { setAttackChoosing(false); setAreaDamageChoosing(false); setAreaStealChoosing(false); setCardChoosing(null) }}>Retour</button>
               )}
-              {publicState?.availableActions.includes('end_turn') && (
+              {!isChoosing && publicState?.availableActions.includes('end_turn') && (
                 <button onClick={() => onAction({ type: 'end_turn', payload: {} })}>Fin de tour</button>
+              )}
+              {!isMyTurn && (
+                <div className="actions-panel" style={{ marginTop: 8 }}>
+                  <h3>Capacité spéciale (hors tour)</h3>
+                  <button onClick={() => onAction({ type: 'use_special', payload: {} })}>Sans cible</button>
+                  {publicState?.players
+                    ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
+                    .map((p: any) => (
+                      <button key={p.id} onClick={() => onAction({ type: 'use_special', payload: { targetId: p.id } })}>
+                        {p.name || p.id}
+                      </button>
+                    ))}
+                </div>
               )}
               {!isRevealed && (
                 <button onClick={() => onAction({ type: 'reveal', payload: {} })}>Révéler son identité</button>
@@ -364,7 +389,8 @@ const [cardChoosing, setCardChoosing] = useState<string | null>(null)
             <h3>Journal</h3>
             <div className="log-entries">
               {publicState?.eventLog.slice(-20).map((e: any, i: number) => (
-                <div key={i} className={`log-entry ${e.type === 'damage' ? 'damage' : ''}`}>
+                <div key={i} className={`log-entry ${e.type === 'damage' ? 'damage' : ''} ${e.type === 'interrupt' ? 'interrupt' : ''}`}
+                  style={e.type === 'interrupt' ? { fontWeight: 'bold' } : undefined}>
                   {e.type === 'card_drawn' || e.type === 'card_used' ? (
                     <>
                       {formatEvent(e, publicState).split(e.data?.card || '').map((part, idx, arr) =>

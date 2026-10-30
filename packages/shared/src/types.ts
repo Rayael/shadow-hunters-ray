@@ -130,6 +130,7 @@ export interface GameState {
   areaPairs: Map<AreaId, AreaId>
   currentRoll: number | null
   availableActions: ActionType[]
+  interruptedBy: PlayerId | null
   eventLog: GameEvent[]
   gameOver: boolean
   winners: PlayerId[]
@@ -240,6 +241,7 @@ export interface GameView {
     winners: PlayerId[]
     availableActions: ActionType[]
     currentRoll: number | null
+    interruptedBy: PlayerId | null
   }
   private: PlayerPrivateView | null
 }
