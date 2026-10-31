@@ -40,6 +40,15 @@ function formatEvent(e: any, state: any): string {
       return e.type
   }
 }
+const AREA_COLORS: Record<string, string> = {
+  hermits_cabin: '#2e7d32',
+  underworld_gate: '#6a1b9a',
+  church: '#f9a825',
+  cemetery: '#424242',
+  weird_woods: '#1b5e20',
+  erstwhile_altar: '#b71c1c',
+}
+
 export default function GameScreen({
   player,
   public: publicState,
@@ -72,7 +81,8 @@ const [attackChoosing, setAttackChoosing] = useState(false)
 const [areaDamageChoosing, setAreaDamageChoosing] = useState(false)
 const [areaStealChoosing, setAreaStealChoosing] = useState(false)
 const [cardChoosing, setCardChoosing] = useState<string | null>(null)
-const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || !!cardChoosing
+const [specialChoosing, setSpecialChoosing] = useState(false)
+const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || !!cardChoosing || specialChoosing
   const [chatMessages, setChatMessages] = useState<{ from: string; text: string; at: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [hoveredCard, setHoveredCard] = useState<any>(null)
@@ -171,7 +181,7 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
               return (
                 <div key={idx} className="area-pair" style={{ border: '2px solid #888', borderRadius: 8, padding: 8, margin: 8, display: 'inline-block', verticalAlign: 'top' }}>
                   {areas.map((area: any) => (
-                    <div key={area.id} className="area" style={{ backgroundColor: `hsl(${(area.id.charCodeAt(0) * 47) % 360}, 35%, 22%)`, margin: 4, padding: 6, borderRadius: 6 }}>
+                    <div key={area.id} className="area" style={{ backgroundColor: AREA_COLORS[area.id] || '#333', margin: 4, padding: 6, borderRadius: 6, color: '#fff' }}>
                       <div className="area-name">{area.name}</div>
                       <div className="area-domain">Dé: {area.domain.join(', ')}</div>
                       <div className="area-players">
@@ -212,16 +222,16 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
                   </span>
                   {cardChoosing === c.id ? (
                     <div>
-                      <button onClick={() => { onAction({ type: 'use_card', payload: { cardId: c.id } }); setCardChoosing(null) }}>Sans cible</button>
+                      <button className="action-btn" onClick={() => { onAction({ type: 'use_card', payload: { cardId: c.id } }); setCardChoosing(null) }}>Sans cible</button>
                       {publicState?.players?.filter((p: any) => p.id !== player.userId && p.state !== 'dead').map((p: any) => (
-                        <button key={p.id} onClick={() => { onAction({ type: 'use_card', payload: { cardId: c.id, targetId: p.id } }); setCardChoosing(null) }}>
+                        <button key={p.id} className="action-btn" onClick={() => { onAction({ type: 'use_card', payload: { cardId: c.id, targetId: p.id } }); setCardChoosing(null) }}>
                           {p.name || p.id}
                         </button>
                       ))}
-                      <button onClick={() => setCardChoosing(null)}>Retour</button>
+
                     </div>
                   ) : (
-                    <button onClick={() => setCardChoosing(c.id)}>Utiliser</button>
+                    <button className="action-btn" onClick={() => setCardChoosing(c.id)}>Utiliser</button>
                   )}
                 </div>
               ))}
@@ -276,7 +286,7 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
                                 {p.name || p.id}
                               </button>
                             ))}
-                          <button onClick={() => setAreaDamageChoosing(false)}>Retour</button>
+
                         </>
                       ) : (
                         <button onClick={() => setAreaDamageChoosing(true)}>Infliger 2 dégâts à un joueur...</button>
@@ -295,7 +305,7 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
                                 {p.name || p.id}
                               </button>
                             ))}
-                          <button onClick={() => setAreaStealChoosing(false)}>Retour</button>
+
                         </>
                       ) : (
                         <button onClick={() => setAreaStealChoosing(true)}>Voler un équipement...</button>
@@ -328,7 +338,7 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
                             {p.name || p.id}
                           </button>
                         ))}
-                      <button onClick={() => setAttackChoosing(false)}>Retour</button>
+
                     </>
                   )}
                 </div>
@@ -336,17 +346,24 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
               {!isChoosing && publicState?.availableActions.includes('decline_attack') && (
                 <button onClick={() => onAction({ type: 'decline_attack', payload: {} })}>Refuser l'attaque</button>
               )}
-              {!isChoosing && publicState?.availableActions.includes('use_special') && (
+              {!isChoosing && publicState?.availableActions.includes('use_special') && isRevealed && (
                 <div>
-                  <p>Capacité spéciale :</p>
-                  <button onClick={() => onAction({ type: 'use_special', payload: {} })}>Sans cible</button>
-                  {publicState?.players
-                    ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
-                    .map((p: any) => (
-                      <button key={p.id} onClick={() => onAction({ type: 'use_special', payload: { targetId: p.id } })}>
-                        {p.name || p.id}
-                      </button>
-                    ))}
+                  {!specialChoosing ? (
+                    <button onClick={() => setSpecialChoosing(true)}>Capacité Spéciale</button>
+                  ) : (
+                    <>
+                      <p>Capacité spéciale :</p>
+                      <button onClick={() => { onAction({ type: 'use_special', payload: {} }); setSpecialChoosing(false) }}>Sans cible</button>
+                      {publicState?.players
+                        ?.filter((p: any) => p.id !== player.userId && p.state !== 'dead')
+                        .map((p: any) => (
+                          <button key={p.id} onClick={() => { onAction({ type: 'use_special', payload: { targetId: p.id } }); setSpecialChoosing(false) }}>
+                            {p.name || p.id}
+                          </button>
+                        ))}
+                      <button onClick={() => setSpecialChoosing(false)}>Retour</button>
+                    </>
+                  )}
                 </div>
               )}
               {(attackChoosing || areaDamageChoosing || areaStealChoosing || cardChoosing) && (
@@ -355,7 +372,7 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
               {!isChoosing && publicState?.availableActions.includes('end_turn') && (
                 <button onClick={() => onAction({ type: 'end_turn', payload: {} })}>Fin de tour</button>
               )}
-              {!isMyTurn && (
+              {!isMyTurn && isRevealed && (
                 <div className="actions-panel" style={{ marginTop: 8 }}>
                   <h3>Capacité spéciale (hors tour)</h3>
                   <button onClick={() => onAction({ type: 'use_special', payload: {} })}>Sans cible</button>
