@@ -104,3 +104,6 @@ body { font-family: "Cinzel", "Georgia", serif; background: radial-gradient(elli
 .audio-controls { position: fixed; bottom: 0.6rem; right: 0.6rem; z-index: 2000; display: flex; gap: 0.4rem; }
 .audio-controls button { background: var(--surface); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0.35rem 0.55rem; cursor: pointer; font-size: 1rem; }
 .audio-controls button:hover { filter: brightness(1.2); }
+
+@media (max-width: 768px){.board{flex-direction:column}.area-pair{display:block;width:100%;margin:4px 0}.area{width:100%}.players-panel{flex-direction:column}.player-card{width:100%}.actions-panel{flex-direction:column}.actions-panel button{width:100%;margin:2px 0}.hand-cards{flex-direction:column}.hand-card{width:100%}}
+@media (max-width: 480px){body{font-size:12px}.area-name{font-size:11px}.pion{width:18px;height:18px;font-size:10px}}

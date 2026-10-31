@@ -145,7 +145,7 @@ export class GameEngine {
         discard: totalDiscard,
       },
       eventLog: this.state.eventLog,
-      areaPairs: Array.from(this.state.areaPairs.entries()),
+      areaPairs: Array.from(this.state.areaPairs.entries()).filter(([a,b]) => a <= b),
       gameOver: this.state.gameOver, winners: this.state.winners,
       availableActions: this.state.availableActions, currentRoll: this.state.currentRoll, interruptedBy: this.state.interruptedBy,
     }
