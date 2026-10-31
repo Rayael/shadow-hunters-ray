@@ -401,23 +401,23 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
             </div>
           )}
 
-          <div className="log">
-            <h3>Journal</h3>
-            <div className="log-entries">
-              {publicState?.eventLog.slice(-20).map((e: any, i: number) => (
-                <div key={i} className={`log-entry ${e.type === 'damage' ? 'damage' : ''} ${e.type === 'interrupt' ? 'interrupt' : ''}`}
-                  style={e.type === 'interrupt' ? { fontWeight: 'bold' } : undefined}>
+
+        </main>
+
+        <aside className="log-panel">
+          <h3>Journal</h3>
+          <div className="log-entries">
+            {publicState?.eventLog.slice(-25).map((e: any, i: number) => {
+              const color = e.type === 'damage' ? '#ff6b6b' : e.type === 'heal' ? '#ff69b4' : e.type === 'death' ? '#8b0000' : e.type === 'reveal' ? '#f9c74f' : e.type === 'card_drawn' ? '#90ee90' : e.type === 'interrupt' ? '#ff8c00' : undefined
+              return (
+                <div key={i} className={`log-entry ${e.type === 'interrupt' ? 'interrupt' : ''}`} style={{ color, fontWeight: e.type === 'interrupt' ? 'bold' : undefined, marginBottom: 4, fontSize: 12 }}>
                   {e.type === 'card_drawn' || e.type === 'card_used' ? (
                     <>
                       {formatEvent(e, publicState).split(e.data?.card || '').map((part, idx, arr) =>
                         idx < arr.length - 1 ? (
                           <span key={idx}>
                             {part}
-                            <span
-                              className="card-link"
-                              onMouseEnter={() => setHoveredCard(allCards.find((x: any) => x.id === e.data?.cardId) || { title: e.data?.card, description: '' })}
-                              onMouseLeave={() => setHoveredCard(null)}
-                            >
+                            <span className="card-link" onMouseEnter={() => setHoveredCard(allCards.find((x: any) => x.id === e.data?.cardId) || { title: e.data?.card, description: '' })} onMouseLeave={() => setHoveredCard(null)}>
                               {e.data?.card}
                             </span>
                           </span>
@@ -430,10 +430,10 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
                     formatEvent(e, publicState)
                   )}
                 </div>
-              ))}
-            </div>
+              )
+            })}
           </div>
-        </main>
+        </aside>
       </div>
       {hoveredCard && (
         <div className="card-tooltip">
