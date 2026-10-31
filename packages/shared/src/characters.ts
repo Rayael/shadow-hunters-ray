@@ -354,7 +354,7 @@ export const CHARACTERS: CharacterRecord[] = [
   ...SHADOWS,
   ...HUNTERS,
   ...NEUTRALS,
-]
+].filter((c) => c.specialDesc !== 'Aucune capacité spéciale.')
 
 export function getCharacterById(id: CharacterId): CharacterRecord | undefined {
   return CHARACTERS.find((c) => c.id === id)

@@ -370,8 +370,8 @@ export class GameEngine {
     if (isOutOfTurn) {
       this.state.interruptedBy = null
     } else {
-      this.state.availableActions = [ActionType.EndTurn]
-      this.state.phase = Phase.TurnEnd
+      this.state.availableActions = [ActionType.AttackPlayer, ActionType.DeclineAttack, ActionType.EndTurn, ActionType.UseCard, ActionType.UseSpecial]
+      this.state.phase = Phase.Attack
     }
     return { events }
   }

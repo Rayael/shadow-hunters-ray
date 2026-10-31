@@ -29,7 +29,9 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
   const lobbyId = engine.state.id.replace('game_', '')
   const room = `game:${lobbyId}`
 
-  if (bot.state === 'hidden' && Math.random() < 0.3) {
+  const botPlayerFull = engine.state.players.get(bot.id)
+  const botHpLeft = botPlayerFull ? botPlayerFull.maxDamage - botPlayerFull.damage : 0
+  if (bot.state === 'hidden' && botHpLeft < 3) {
     try {
       engine.revealCharacter(bot.id)
       await broadcastGameState(io, engine, lobbyId)
@@ -94,9 +96,20 @@ if (engine.canExecute(bot.id, ActionType.UseAreaAction)) {
       const botPlayer = engine.state.players.get(bot.id)
       const allPlayers = Array.from(engine.state.players.values())
       const pairedArea = botPlayer?.location ? engine.state.areaPairs.get(botPlayer.location as any) : undefined
+      const botCid = engine.state.characterAssignments.get(bot.id)
+      const botChar = botCid ? engine.state.charactersPool.find((c) => c.id === botCid) : null
+      const botRevealed = botPlayer?.state === 'revealed'
       const targets = allPlayers.filter(
-        (p: { id: PlayerId; state: string; location: string | null }) => p.id !== bot.id && p.state !== 'dead' &&
-          (p.location === botPlayer?.location || (pairedArea !== undefined && p.location === pairedArea))
+        (p: { id: PlayerId; state: string; location: string | null }) => {
+          if (p.id === bot.id || p.state === 'dead') return false
+          if (!(p.location === botPlayer?.location || (pairedArea !== undefined && p.location === pairedArea))) return false
+          if (botRevealed && p.state === 'revealed') {
+            const pCid = engine.state.characterAssignments.get(p.id as PlayerId)
+            const pChar = pCid ? engine.state.charactersPool.find((c) => c.id === pCid) : null
+            if (pChar && botChar && pChar.allegiance === botChar.allegiance) return false
+          }
+          return true
+        }
       )
       if (targets.length > 0) {
         const target = targets[Math.floor(Math.random() * targets.length)]
