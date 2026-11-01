@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getAllCards } from '@shadow-hunters/shared'
 
 function formatEvent(e: any, state: any): string {
@@ -86,6 +86,10 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
   const [chatMessages, setChatMessages] = useState<{ from: string; text: string; at: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [hoveredCard, setHoveredCard] = useState<any>(null)
+  const logRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
+  }, [publicState?.eventLog?.length])
   useEffect(() => {
     setAttackChoosing(false)
     setAreaDamageChoosing(false)
@@ -406,8 +410,8 @@ const isChoosing = attackChoosing || areaDamageChoosing || areaStealChoosing || 
 
         <aside className="log-panel">
           <h3>Journal</h3>
-          <div className="log-entries">
-            {publicState?.eventLog.slice(-25).map((e: any, i: number) => {
+          <div className="log-entries" ref={logRef}>
+            {publicState?.eventLog.slice(-25).filter((e: any) => e.type !== 'card_drawn' && e.type !== 'card_used').map((e: any, i: number) => {
               const color = e.type === 'damage' ? '#ff6b6b' : e.type === 'heal' ? '#ff69b4' : e.type === 'death' ? '#8b0000' : e.type === 'reveal' ? '#f9c74f' : e.type === 'card_drawn' ? '#90ee90' : e.type === 'interrupt' ? '#ff8c00' : undefined
               return (
                 <div key={i} className={`log-entry ${e.type === 'interrupt' ? 'interrupt' : ''}`} style={{ color, fontWeight: e.type === 'interrupt' ? 'bold' : undefined, marginBottom: 4, fontSize: 12 }}>

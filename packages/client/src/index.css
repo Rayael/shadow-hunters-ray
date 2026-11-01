@@ -439,4 +439,4 @@ body { font-family: "Cinzel", "Georgia", serif; background: radial-gradient(elli
 
 .action-btn{background:var(--accent);color:#000;border:none;padding:6px 12px;margin:2px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:13px}.action-btn.secondary{background:#555;color:#fff}.action-btn:hover{opacity:0.85}
 
-.game-body{display:flex;gap:12px;align-items:flex-start}.players-panel{flex:0 0 220px;max-height:90vh;overflow:auto}.board-area{flex:1;min-width:0}.log-panel{flex:0 0 260px;max-height:90vh;overflow:auto;background:var(--panel);padding:8px;border-radius:8px}.log-entries{display:flex;flex-direction:column;gap:4px}
+.game-body{display:flex;gap:12px;align-items:flex-start}.players-panel{flex:0 0 20%;max-height:90vh;overflow:auto}.board-area{flex:0 0 60%;min-width:0}.log-panel{flex:0 0 20%;max-height:90vh;overflow:auto;background:var(--panel);padding:8px;border-radius:8px}.log-entries{display:flex;flex-direction:column;gap:4px}
