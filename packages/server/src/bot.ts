@@ -3,25 +3,35 @@ import { GameEngine, PlayerId, ActionType } from '@shadow-hunters/shared'
 import { broadcastGameState } from './game.js'
 
 const BOT_THINK_MS = 1500
+const activeBotTurns = new Set<string>()
 
 export function setupBotHandling(io: IOServer, games: Map<string, GameEngine>) {
-  setInterval(async () => {
+  const timer = setInterval(async () => {
     for (const [lobbyId, engine] of games) {
-      if (engine.state.gameOver) continue
+      if (engine.state.gameOver || activeBotTurns.has(lobbyId)) continue
       const turnPlayerId = engine.state.turnPlayerId
       if (!turnPlayerId) continue
       const player = engine.state.players.get(turnPlayerId)
       if (!player || !player.isBot) continue
+      activeBotTurns.add(lobbyId)
       try {
-        await playBotTurn(io, engine, player)
+        await playBotTurn(io, engine, player, () => games.get(lobbyId) === engine)
       } catch (error) {
         console.error(`Erreur bot ${player.name}:`, error)
+      } finally {
+        activeBotTurns.delete(lobbyId)
       }
     }
   }, BOT_THINK_MS)
+  timer.unref?.()
 }
 
-async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId; state: string; location: string | null; isBot: boolean }) {
+async function playBotTurn(
+  io: IOServer,
+  engine: GameEngine,
+  bot: { id: PlayerId; state: string; location: string | null; isBot: boolean },
+  isCurrentGame: () => boolean,
+) {
   const lobbyId = engine.state.id.replace('game_', '')
   const room = `game:${lobbyId}`
   const botPlayerFull = engine.state.players.get(bot.id)
@@ -35,12 +45,14 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
   await broadcastGameState(io, engine, lobbyId)
   io.to(room).emit('game:events', { events: [{ type: 'roll', timestamp: Date.now(), actor: bot.id, data: { roll } }] })
   await wait()
+  if (!isCurrentGame() || engine.state.gameOver) return
   if (roll === 7 && engine.canExecute(bot.id, ActionType.ChooseArea)) {
     const areas = Array.from(engine.state.areas.keys())
     engine.chooseArea(bot.id, areas[Math.floor(Math.random() * areas.length)])
     await broadcastGameState(io, engine, lobbyId)
   }
   await wait()
+  if (!isCurrentGame() || engine.state.gameOver) return
   if (engine.canExecute(bot.id, ActionType.UseAreaAction)) {
     const areaId = engine.state.players.get(bot.id)?.location
     if (areaId === 'weird_woods') {
@@ -61,6 +73,7 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
     await broadcastGameState(io, engine, lobbyId)
   }
   await wait()
+  if (!isCurrentGame() || engine.state.gameOver) return
   if (engine.canExecute(bot.id, ActionType.AttackPlayer)) {
     const botPlayer = engine.state.players.get(bot.id)
     const pairedArea = botPlayer?.location ? engine.state.areaPairs.get(botPlayer.location as any) : undefined
@@ -84,6 +97,7 @@ async function playBotTurn(io: IOServer, engine: GameEngine, bot: { id: PlayerId
     await broadcastGameState(io, engine, lobbyId)
   }
   await wait()
+  if (!isCurrentGame() || engine.state.gameOver) return
   if (engine.canExecute(bot.id, ActionType.EndTurn)) {
     engine.endTurn(bot.id)
     await broadcastGameState(io, engine, lobbyId)

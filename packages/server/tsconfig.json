@@ -3,9 +3,7 @@
     "target": "ES2022",
     "module": "Node16",
     "moduleResolution": "node16",
-    "lib": [
-      "ES2022"
-    ],
+    "lib": ["ES2022"],
     "strict": true,
     "declaration": true,
     "sourceMap": true,
@@ -15,17 +13,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
-  "include": [
-    "src/**/*",
-    "prisma/schema.prisma"
-  ],
-  "exclude": [
-    "dist",
-    "vitest.config.ts",
-    "src/**/*.test.ts"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "vitest.config.ts", "src/**/*.test.ts"]
 }

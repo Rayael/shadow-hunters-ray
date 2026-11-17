@@ -1,11 +1,9 @@
-import { createHash, randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import express, { type Request, type Response } from 'express'
 import { Server as IOServer, type Socket } from 'socket.io'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { rateLimit } from 'express-rate-limit'
 import { authenticateSession } from './auth.js'
 import { handleLobbyEvents } from './lobby.js'
@@ -19,12 +17,8 @@ const LOBBY_PASSWORD = process.env.LOBBY_PASSWORD || 'EDGAR'
 const SESSION_SECRET = process.env.SESSION_SECRET || 'changez-moi'
 const PUBLIC_URL = process.env.PUBLIC_URL || ''
 const NODE_ENV = process.env.NODE_ENV || 'development'
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-function hashPassword(password: string): string {
-  return createHash('sha256').update(password).digest('hex')
-}
-void hashPassword // Retain the helper for deployments that configure a password hash externally.
+// The server package currently compiles as CommonJS, so use its built-in __dirname.
+declare const __dirname: string
 
 const app = express()
 const httpServer = createServer(app)
@@ -54,10 +48,12 @@ app.post('/api/join', authLimiter, (req: Request, res: Response) => {
   const existingSession = player && Array.from(sessions.values()).find((candidate) => candidate.playerId === player!.id && candidate.connected && candidate.expiresAt > new Date())
   if (existingSession) return res.status(409).json({ error: 'Ce pseudo est déjà utilisé par un joueur connecté' })
   if (lobby.status === 'GAME' && !player) return res.status(403).json({ error: 'Une partie est déjà en cours' })
+
   if (!player) {
     const capacity = validateLobbyCapacity(lobby.players.length, 9)
     if (!capacity.ok) return res.status(403).json({ error: capacity.error })
     const isHost = !lobby.hostId || !Array.from(sessions.values()).some((candidate) => candidate.connected && getPlayerForSession(candidate)?.isHost)
+    if (isHost) lobby.players.forEach((candidate) => { candidate.isHost = false })
     player = {
       id: createId(), userId: nameCheck.normalized, displayName: displayName.trim(),
       number: lobby.players.length + 1, color: COLORS[lobby.players.length] ?? '#FFFFFF', isBot: false, isHost,
@@ -65,6 +61,10 @@ app.post('/api/join', authLimiter, (req: Request, res: Response) => {
     lobby.players.push(player)
     if (isHost) lobby.hostId = player.userId
   } else {
+    // Rejoining with the same name invalidates any abandoned session tokens.
+    for (const oldSession of sessions.values()) {
+      if (oldSession.playerId === player.id) removeSession(oldSession)
+    }
     player.displayName = displayName.trim()
   }
 
