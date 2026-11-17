@@ -1,238 +1,127 @@
-import { Server as IOServer, Socket } from 'socket.io'
-import { GameEngine, PlayerId, ActionType } from '@shadow-hunters/shared'
-import { prisma } from './index.js'
+import type { Server as IOServer, Socket } from 'socket.io'
+import { ActionType, GameEngine, type PlayerId } from '@shadow-hunters/shared'
 import { getSocketPlayer, getSocketSession } from './auth.js'
+import { lobby, sessions } from './store.js'
 
 const games = new Map<string, GameEngine>()
-
 export { games }
 
-export async function saveGameState(lobbyId: string, engine: GameEngine) {
-  const data = {
-    status: engine.state.phase,
-    round: engine.state.round,
-    turnPlayerId: engine.state.turnPlayerId ?? null,
-    currentRoll: engine.state.currentRoll ?? null,
-    gameOver: engine.state.gameOver,
-    stateJson: JSON.parse(JSON.stringify(engine.state)) as any,
-    updatedAt: new Date(),
-  }
-  const existing = await prisma.game.findFirst({ where: { lobbyId } })
-  if (existing) {
-    await prisma.game.update({ where: { id: existing.id }, data })
-  } else {
-    await prisma.game.create({ data: { lobbyId, ...data } })
-  }
-}
+// State lives in memory; no database or disk persistence is required.
+export async function saveGameState(_lobbyId: string, _engine: GameEngine) {}
 
 export async function broadcastGameState(io: IOServer, engine: GameEngine, lobbyId: string) {
-  const sessions = await prisma.session.findMany({
-    where: { lobbyId, connected: true },
-    include: { player: true },
-  })
-  for (const s of sessions) {
-    if (!s.socketId) continue
-    const pid = (s.player?.userId ?? null) as PlayerId | null
-    io.to(s.socketId).emit('game:state', { public: engine.getPublicView(pid) })
+  for (const session of sessions.values()) {
+    if (session.lobbyId !== lobbyId || !session.connected || !session.socketId) continue
+    const player = lobby.players.find((candidate) => candidate.id === session.playerId)
+    const pid = (player?.userId ?? null) as PlayerId | null
+    io.to(session.socketId).emit('game:state', { public: engine.getPublicView(pid) })
     if (pid) {
-      const pv = engine.getPrivateView(pid)
-      if (pv) io.to(s.socketId).emit('game:private', { private: pv })
+      const privateView = engine.getPrivateView(pid)
+      if (privateView) io.to(session.socketId).emit('game:private', { private: privateView })
     }
   }
 }
+
 export function handleGameEvents(io: IOServer, socket: Socket) {
   const player = getSocketPlayer(socket)
   const session = getSocketSession(socket)
   if (!player || !session) return
-
   socket.join(`game:${session.lobbyId}`)
 
-  socket.on('game:chat', (data: { text?: string }) => {
-    const text = (data?.text || '').trim()
-    if (!text) return
-    io.to(`game:${session.lobbyId}`).emit('game:chat', {
-      from: player.displayName,
-      text,
-      at: new Date().toISOString(),
-    })
+  socket.on('game:chat', (data: { text?: string } = {}) => {
+    const text = (data.text || '').trim().slice(0, 500)
+    if (text) io.to(`game:${session.lobbyId}`).emit('game:chat', { from: player.displayName, text, at: new Date().toISOString() })
   })
 
-  socket.on('game:end', async () => {
-    if (!player?.isHost) return
-    await prisma.session.deleteMany({ where: { lobbyId: session.lobbyId } })
-    await prisma.lobbyPlayer.deleteMany({ where: { lobbyId: session.lobbyId } })
-    await prisma.game.deleteMany({ where: { lobbyId: session.lobbyId } })
-    await prisma.log.deleteMany({ where: { lobbyId: session.lobbyId } })
-    await prisma.lobby.update({ where: { id: session.lobbyId }, data: { status: 'LOBBY', hostId: null } })
+  socket.on('game:end', () => {
+    if (!player.isHost) return
     games.delete(session.lobbyId)
+    lobby.status = 'LOBBY'
+    lobby.players = lobby.players.filter((candidate) => !candidate.isBot)
+    lobby.players.sort((a, b) => a.number - b.number).forEach((candidate, i) => { candidate.number = i + 1 })
     io.to(`game:${session.lobbyId}`).emit('game:ended')
     io.to(`lobby:${session.lobbyId}`).emit('game:ended')
+    io.to(`lobby:${session.lobbyId}`).emit('lobby:sync', {
+      id: lobby.id, status: lobby.status, hostId: lobby.hostId,
+      players: lobby.players.map((candidate) => ({ ...candidate })),
+    })
   })
 
-  function getEngine(): GameEngine | undefined {
-    return games.get(session.lobbyId)
-  }
-
-  async function saveState(engine: GameEngine) {
-    await saveGameState(session.lobbyId, engine)
-  }
-
-  socket.on('game:start', async (data: { playerCount: number; botCount: number }) => {
-    const p = getSocketPlayer(socket)
-    if (!p?.isHost) {
-      socket.emit('game:error', { error: 'Seul l\'hôte peut démarrer la partie' })
-      return
+  socket.on('game:start', async (data: { playerCount?: number; botCount?: number } = {}) => {
+    if (!player.isHost) return socket.emit('game:error', { error: 'Seul l’hôte peut démarrer la partie' })
+    if (games.has(session.lobbyId)) return socket.emit('game:error', { error: 'Une partie est déjà en cours' })
+    const totalPlayers = Number(data.playerCount)
+    if (!Number.isInteger(totalPlayers) || totalPlayers < 4 || totalPlayers > 8) {
+      return socket.emit('game:error', { error: 'Nombre de joueurs invalide (4-8)' })
     }
-    if (getEngine()) {
-      socket.emit('game:error', { error: 'Une partie est déjà en cours' })
-      return
+    const humans = lobby.players.filter((candidate) => !candidate.isBot)
+    if (totalPlayers < humans.length || totalPlayers < lobby.players.length) {
+      return socket.emit('game:error', { error: 'Le nombre choisi est inférieur au nombre de joueurs actuels' })
     }
-
-    const totalPlayers = data.playerCount
-    if (totalPlayers < 4 || totalPlayers > 8) {
-      socket.emit('game:error', { error: 'Nombre de joueurs invalide (4-8)' })
-      return
+    while (lobby.players.length < totalPlayers) {
+      const number = lobby.players.length + 1
+      lobby.players.push({
+        id: `bot_${number}_${Date.now()}`, userId: `cpu_${number}`,
+        displayName: BOT_NAMES[number - 1] ?? `CPU_${number}`, number,
+        color: COLORS[number - 1] ?? '#FFFFFF', isBot: true, isHost: false,
+      })
     }
-
-    const lobbyPlayers = await prisma.lobbyPlayer.findMany({
-      where: { lobbyId: session.lobbyId },
-      orderBy: { number: 'asc' },
-    })
-
-    type LobbyPlayerRow = {
-      id: string
-      userId: string
-      displayName: string
-      number: number
-      color: string
-      isBot: boolean
-      isHost: boolean
-    }
-
-    const humans = lobbyPlayers.filter((lp: LobbyPlayerRow) => !lp.isBot)
-    const existingBots = lobbyPlayers.filter((lp: LobbyPlayerRow) => lp.isBot).length
-
-    if (totalPlayers < humans.length) {
-      socket.emit('game:error', { error: 'Trop de joueurs humains pour ce nombre total' })
-      return
-    }
-
-    const toCreate = totalPlayers - lobbyPlayers.length
-    if (toCreate > 0) {
-      const colors = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
-      const botNames = ['Bernard le coquin', 'Skull Kingounet', 'Sarkozy', 'Bismillah', 'Kaèr Ache !', 'Macron', 'Michel Forever', 'Gertrude']
-      for (let i = 0; i < toCreate; i++) {
-        const playerNum = lobbyPlayers.length + i + 1
-        const botIdx = lobbyPlayers.filter((lp: any) => lp.isBot).length + i + 1
-        await prisma.lobbyPlayer.create({
-          data: {
-            lobbyId: session.lobbyId,
-            userId: `cpu_${playerNum}`,
-            displayName: botNames[botIdx - 1] ?? `CPU_${botIdx}`,
-            number: playerNum,
-            color: colors[playerNum - 1] ?? '#FFFFFF',
-            isBot: true,
-          },
-        })
-      }
-    }
-
-    const allPlayers = await prisma.lobbyPlayer.findMany({
-      where: { lobbyId: session.lobbyId },
-      orderBy: { number: 'asc' },
-    }) as LobbyPlayerRow[]
-    if (allPlayers.length !== totalPlayers) {
-      socket.emit('game:error', { error: 'Le nombre de joueurs ne correspond pas' })
-      return
-    }
-    const engine = GameEngine.createGame(
-      `game_${session.lobbyId}`,
-      allPlayers.map((lp: LobbyPlayerRow) => ({
-        id: lp.userId as PlayerId,
-        name: lp.displayName,
-        number: lp.number,
-        color: lp.color,
-        isBot: lp.isBot,
-      }))
-    )
-
+    const engine = GameEngine.createGame(`game_${session.lobbyId}`, lobby.players.map((candidate) => ({
+      id: candidate.userId as PlayerId, name: candidate.displayName, number: candidate.number,
+      color: candidate.color, isBot: candidate.isBot,
+    })))
     games.set(session.lobbyId, engine)
-
-    await prisma.lobby.update({
-      where: { id: session.lobbyId },
-      data: { status: 'GAME' },
-    })
-
+    lobby.status = 'GAME'
     engine.assignCharacters()
-    await saveState(engine)
-
     await broadcastGameState(io, engine, session.lobbyId)
-
-    io.to(`game:${session.lobbyId}`).emit('game:log', {
-      type: 'message', text: 'La partie a commencé !',
+    io.to(`game:${session.lobbyId}`).emit('game:log', { type: 'message', text: 'La partie a commencé !' })
+    io.to(`lobby:${session.lobbyId}`).emit('lobby:sync', {
+      id: lobby.id, status: lobby.status, hostId: lobby.hostId,
+      players: lobby.players.map((candidate) => ({ ...candidate })),
     })
   })
 
-  socket.on('game:action', async (data: { type: string; payload: any }) => {
-    const engine = getEngine()
-    if (!engine) {
-      socket.emit('game:error', { error: 'Aucune partie en cours' })
-      return
-    }
-
-    const p = getSocketPlayer(socket)
-    if (!p) {
-      socket.emit('game:error', { error: 'Non authentifié' })
-      return
-    }
-    const actorId = p.userId as PlayerId
-
+  socket.on('game:action', async (data: { type?: string; payload?: any } = {}) => {
+    const engine = games.get(session.lobbyId)
+    if (!engine) return socket.emit('game:error', { error: 'Aucune partie en cours' })
+    const actorId = player.userId as PlayerId
+    const payload = data.payload ?? {}
     try {
-      let result: any = null
+      let result: any
       switch (data.type) {
         case 'roll_die': result = engine.rollDie(actorId); break
-        case 'choose_area': result = engine.chooseArea(actorId, data.payload.areaId); break
-        case 'use_area_action': result = engine.useAreaAction(actorId, data.payload.targetId, data.payload.choice); break
-        case 'use_card': result = engine.useCard(actorId, data.payload.cardId, data.payload.targetId); break
-        case 'use_special': result = engine.useSpecial(actorId, data.payload.targetId); break
+        case 'choose_area': result = engine.chooseArea(actorId, payload.areaId); break
+        case 'use_area_action': result = engine.useAreaAction(actorId, payload.targetId, payload.choice); break
+        case 'use_card': result = engine.useCard(actorId, payload.cardId, payload.targetId); break
+        case 'use_special': result = engine.useSpecial(actorId, payload.targetId); break
         case 'decline_area_action': result = engine.declineAreaAction(actorId); break
-        case 'attack_player': result = engine.attackPlayer(actorId, data.payload.targetId); break
+        case 'attack_player': result = engine.attackPlayer(actorId, payload.targetId); break
         case 'decline_attack': result = engine.declineAttack(actorId); break
         case 'end_turn': result = engine.endTurn(actorId); break
         case 'reveal': result = engine.revealCharacter(actorId); break
-        default:
-          socket.emit('game:error', { error: `Action inconnue: ${data.type}` })
-          return
+        default: return socket.emit('game:error', { error: `Action inconnue: ${data.type}` })
       }
-
-      saveState(engine)
-
       await broadcastGameState(io, engine, session.lobbyId)
-
-      if (result.events && result.events.length > 0) {
-        io.to(`game:${session.lobbyId}`).emit('game:events', { events: result.events })
-      }
-    } catch (err: any) {
-      socket.emit('game:error', { error: err.message })
+      if (result.events?.length) io.to(`game:${session.lobbyId}`).emit('game:events', { events: result.events })
+    } catch (error) {
+      socket.emit('game:error', { error: error instanceof Error ? error.message : 'Action impossible' })
     }
   })
 
   socket.on('game:reconnect', async () => {
-    const engine = getEngine()
+    const engine = games.get(session.lobbyId)
     if (!engine) return
-    const p = getSocketPlayer(socket)
-    if (!p) return
-    const privateView = engine.getPrivateView(p.userId)
-    const publicView = engine.getPublicView(p.userId)
-    socket.emit('game:state', { public: publicView })
+    const pid = player.userId as PlayerId
+    socket.emit('game:state', { public: engine.getPublicView(pid) })
+    const privateView = engine.getPrivateView(pid)
     if (privateView) socket.emit('game:private', { private: privateView })
-    await prisma.session.update({ where: { id: session.id }, data: { socketId: socket.id } })
   })
 
-  socket.on('disconnect', async () => {
-    await prisma.session.updateMany({
-      where: { id: session.id },
-      data: { connected: false, socketId: null },
-    })
+  socket.on('disconnect', () => {
+    session.connected = false
+    session.socketId = null
   })
 }
+
+const COLORS = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
+const BOT_NAMES = ['Bernard le coquin', 'Skull Kingounet', 'Sarkozy', 'Bismillah', 'Kaèr Ache !', 'Macron', 'Michel Forever', 'Gertrude']

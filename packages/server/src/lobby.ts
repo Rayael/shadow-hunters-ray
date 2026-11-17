@@ -1,6 +1,9 @@
-import { Server as IOServer, Socket } from 'socket.io'
-import { prisma } from './index.js'
+import type { Server as IOServer, Socket } from 'socket.io'
 import { getSocketPlayer, getSocketSession } from './auth.js'
+import { createId, getPlayer, lobby, publicLobby, sessions, sessionsByToken } from './store.js'
+
+const COLORS = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
+const BOT_NAMES = ['Bernard le coquin', 'Skull Kingounet', 'Sarkozy', 'Bismillah', 'Kaèr Ache !', 'Macron', 'Michel Forever', 'Gertrude']
 
 export function handleLobbyEvents(io: IOServer, socket: Socket) {
   const player = getSocketPlayer(socket)
@@ -8,125 +11,57 @@ export function handleLobbyEvents(io: IOServer, socket: Socket) {
   if (!player || !session) return
 
   socket.join(`lobby:${session.lobbyId}`)
+  if (lobby.status === 'GAME') socket.join(`game:${session.lobbyId}`)
 
-  // Diffuser l'état du lobby à tous
-  async function broadcastLobby() {
-    const lobby = await prisma.lobby.findUnique({
-      where: { id: session.lobbyId },
-      include: { players: { orderBy: { number: 'asc' } } },
-    })
-    if (!lobby) return
-    io.to(`lobby:${session.lobbyId}`).emit('lobby:sync', {
-      id: lobby.id,
-      status: lobby.status,
-      hostId: lobby.hostId,
-      players: lobby.players.map((p: { id: string; userId: string; displayName: string; number: number; color: string; isHost: boolean; isBot: boolean }) => ({
-        id: p.id,
-        userId: p.userId,
-        displayName: p.displayName,
-        number: p.number,
-        color: p.color,
-        isHost: p.isHost,
-        isBot: p.isBot,
-      })),
-    })
+  function broadcastLobby() {
+    io.to(`lobby:${session.lobbyId}`).emit('lobby:sync', publicLobby())
   }
-
   broadcastLobby()
 
-  socket.on('lobby:add_bot', async () => {
-    if (!player.isHost) {
-      socket.emit('lobby:error', { error: 'Seul l\'hôte peut ajouter un bot' })
-      return
-    }
-    const count = await prisma.lobbyPlayer.count({
-      where: { lobbyId: session.lobbyId },
+  socket.on('lobby:add_bot', () => {
+    if (!player.isHost) return socket.emit('lobby:error', { error: 'Seul l’hôte peut ajouter un bot' })
+    if (lobby.players.length >= 9) return socket.emit('lobby:error', { error: 'Lobby complet' })
+    const number = lobby.players.length + 1
+    lobby.players.push({
+      id: createId(), userId: `cpu_${number}`, displayName: BOT_NAMES[number - 1] ?? `CPU_${number}`,
+      number, color: COLORS[number - 1] ?? '#FFFFFF', isBot: true, isHost: false,
     })
-    if (count >= 9) {
-      socket.emit('lobby:error', { error: 'Lobby complet' })
-      return
-    }
-    const botNumber = count + 1
-    const colors = ['#F5F5F5', '#646464', '#4FB64E', '#3E63AB', '#C561A3', '#DB3E3E', '#F9EA30', '#EF882B', '#9B59B6']
-    await prisma.lobbyPlayer.create({
-      data: {
-        lobbyId: session.lobbyId,
-        userId: `cpu_${botNumber}`,
-        displayName: (["Bernard le coquin", "Skull Kingounet", "Sarkozy", "Bismillah", "Kaèr Ache !", "Macron", "Michel Forever", "Gertrude"][botNumber - 1]) ?? `CPU_${botNumber}`,
-        number: botNumber,
-        color: colors[botNumber - 1] ?? '#FFFFFF',
-        isBot: true,
-      },
-    })
-    await broadcastLobby()
+    broadcastLobby()
   })
 
-  socket.on('lobby:remove_bot', async (data: { userId: string }) => {
-    if (!player.isHost) {
-      socket.emit('lobby:error', { error: 'Seul l\'hôte peut retirer un bot' })
-      return
-    }
-    await prisma.lobbyPlayer.deleteMany({
-      where: { lobbyId: session.lobbyId, userId: data.userId, isBot: true },
-    })
-    await broadcastLobby()
+  socket.on('lobby:remove_bot', (data: { userId?: string } = {}) => {
+    if (!player.isHost) return socket.emit('lobby:error', { error: 'Seul l’hôte peut retirer un bot' })
+    const index = lobby.players.findIndex((candidate) => candidate.userId === data.userId && candidate.isBot)
+    if (index >= 0) lobby.players.splice(index, 1)
+    lobby.players.sort((a, b) => a.number - b.number).forEach((candidate, i) => { candidate.number = i + 1 })
+    broadcastLobby()
   })
 
-  socket.on('lobby:set_host', async (data: { userId: string }) => {
+  socket.on('lobby:set_host', (data: { userId?: string } = {}) => {
     if (!player.isHost) return
-    await prisma.lobby.update({
-      where: { id: session.lobbyId },
-      data: { hostId: data.userId },
-    })
-    await prisma.lobbyPlayer.updateMany({
-      where: { lobbyId: session.lobbyId },
-      data: { isHost: false },
-    })
-    await prisma.lobbyPlayer.updateMany({
-      where: { lobbyId: session.lobbyId, userId: data.userId },
-      data: { isHost: true },
-    })
-    await broadcastLobby()
+    const selected = data.userId ? getPlayer(data.userId) : undefined
+    if (!selected || selected.isBot) return socket.emit('lobby:error', { error: 'Joueur introuvable' })
+    lobby.hostId = selected.userId
+    lobby.players.forEach((candidate) => { candidate.isHost = candidate.id === selected.id })
+    broadcastLobby()
   })
 
-  socket.on('lobby:chat', async (data: { text?: string }) => {
-    const text = (data?.text || '').trim()
-    if (!text) return
-    io.to(`lobby:${session.lobbyId}`).emit('lobby:chat', {
-      from: player.displayName,
-      text,
-      at: new Date().toISOString(),
-    })
+  socket.on('lobby:chat', (data: { text?: string } = {}) => {
+    const text = (data.text || '').trim().slice(0, 500)
+    if (text) io.to(`lobby:${session.lobbyId}`).emit('lobby:chat', { from: player.displayName, text, at: new Date().toISOString() })
   })
 
-  socket.on('disconnect', async () => {
-    await prisma.session.updateMany({
-      where: { id: session.id },
-      data: { connected: false, socketId: null },
-    })
-
-    // Transfert de l'hôte si le joueur déconnecté était hôte
+  socket.on('disconnect', () => {
+    session.connected = false
+    session.socketId = null
     if (player.isHost) {
-      const next = await prisma.lobbyPlayer.findFirst({
-        where: { lobbyId: session.lobbyId, id: { not: player.id } },
-        orderBy: { number: 'asc' },
-      })
+      const next = lobby.players.find((candidate) => !candidate.isBot && candidate.id !== player.id &&
+        Array.from(sessions.values()).some((candidateSession) => candidateSession.playerId === candidate.id && candidateSession.connected))
       if (next) {
-        await prisma.lobby.update({
-          where: { id: session.lobbyId },
-          data: { hostId: next.userId },
-        })
-        await prisma.lobbyPlayer.updateMany({
-          where: { lobbyId: session.lobbyId },
-          data: { isHost: false },
-        })
-        await prisma.lobbyPlayer.updateMany({
-          where: { lobbyId: session.lobbyId, userId: next.userId },
-          data: { isHost: true },
-        })
+        lobby.hostId = next.userId
+        lobby.players.forEach((candidate) => { candidate.isHost = candidate.id === next.id })
       }
     }
-
-    await broadcastLobby()
+    broadcastLobby()
   })
 }

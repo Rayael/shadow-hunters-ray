@@ -1,1 +1,1 @@
-web: gunicorn -w 1 --threads 4 --timeout 120 shadow-hunters.app:app
+web: npm run server:start

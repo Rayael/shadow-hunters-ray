@@ -19,9 +19,5 @@ services:
         generateValue: true
       - key: LOBBY_PASSWORD
         value: EDGAR
-      - key: DATABASE_URL
-        sync: false
       - key: PUBLIC_URL
         sync: false
-      - key: PRISMA_DISABLE_UPDATE_CHECK
-        value: "1"
